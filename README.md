@@ -7,7 +7,7 @@
 ## สแตกเทคโนโลยี
 
 - Next.js 16 (App Router) + TypeScript + Tailwind CSS
-- Prisma ORM + SQLite (ไฟล์เดียว `dev.db`, ไม่ต้องติดตั้งฐานข้อมูลแยก)
+- Prisma ORM + libSQL adapter — dev ใช้ SQLite ไฟล์เดียว (`dev.db`), production ใช้ Turso (libSQL) แบบ serverless
 - Auth แบบ custom: bcryptjs (hash รหัสผ่าน) + jose (JWT ใน httpOnly cookie)
 - xlsx (SheetJS) สำหรับนำเข้า/ออกไฟล์ Excel
 
@@ -56,3 +56,47 @@ ADMIN จะแก้ไข/ลบบัญชี ADMIN หรือให้ส
 (คอลัมน์: รหัสนักเรียน, คำนำหน้า, ชื่อ, นามสกุล, ห้อง) หากรหัสนักเรียนซ้ำกับ
 ที่มีอยู่แล้ว ระบบจะอัปเดตข้อมูลแทนการสร้างใหม่ และแสดงสรุปผล/ข้อผิดพลาด
 รายแถวหลังนำเข้า
+
+## Deploy ขึ้น Vercel (ใช้ Turso เป็นฐานข้อมูล)
+
+Vercel รันแบบ serverless เขียนไฟล์ SQLite ไม่ได้ จึงใช้ **Turso (libSQL)** เป็น
+ฐานข้อมูล production แอปจะสลับมาใช้ Turso อัตโนมัติเมื่อมี env `TURSO_DATABASE_URL`
+
+**1. สร้างฐานข้อมูล Turso** (ติดตั้ง [Turso CLI](https://docs.turso.tech/cli/installation) ก่อน)
+
+```bash
+turso auth signup                       # หรือ turso auth login
+turso db create pnp-student-council
+turso db show pnp-student-council --url # => TURSO_DATABASE_URL (libsql://...)
+turso db tokens create pnp-student-council  # => TURSO_AUTH_TOKEN
+```
+
+**2. สร้างตารางในฐานข้อมูล Turso** (รัน migration SQL ที่มีอยู่)
+
+```bash
+turso db shell pnp-student-council < prisma/migrations/20260716033403_init/migration.sql
+```
+
+**3. ใส่ข้อมูลเริ่มต้น (admin + ข้อมูลตัวอย่าง)** — รัน seed โดยชี้ไปที่ Turso
+
+```bash
+TURSO_DATABASE_URL="libsql://<db>.turso.io" \
+TURSO_AUTH_TOKEN="<token>" \
+SEED_ADMIN_USERNAME="admin" \
+SEED_ADMIN_PASSWORD="<รหัสผ่านที่ตั้งเอง>" \
+npx tsx prisma/seed.ts
+```
+
+**4. ตั้งค่า Environment Variables บน Vercel** (Project Settings → Environment Variables)
+
+| Key | Value |
+| --- | --- |
+| `TURSO_DATABASE_URL` | `libsql://<db>.turso.io` |
+| `TURSO_AUTH_TOKEN` | token จากขั้นตอนที่ 1 |
+| `SESSION_SECRET` | ค่าสุ่มยาวๆ (เช่น `openssl rand -base64 32`) |
+
+**5. Deploy** — import repo เข้า Vercel แล้ว deploy ได้เลย (`prisma generate` รันอัตโนมัติ
+ผ่าน `postinstall`, build command ใช้ค่าเริ่มต้น `next build`)
+
+> เมื่อแก้ schema ภายหลัง: สร้าง migration ใหม่ด้วย `npm run db:migrate` (local) แล้วนำไฟล์
+> SQL ใน `prisma/migrations/<ใหม่>/migration.sql` ไปรันกับ Turso ด้วย `turso db shell` เหมือนขั้นตอนที่ 2
