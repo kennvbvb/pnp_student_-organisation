@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ระบบสภานักเรียนโรงเรียนวัดพนมพริก
 
-## Getting Started
+เว็บแอปสำหรับบริหารจัดการสภานักเรียน: ล็อกอินแบบมีบทบาท/สิทธิ์, โครงสร้างสภา,
+คะแนนความประพฤติ (พร้อมนำเข้า Excel), รายชื่อนักเรียน, แผนงานประจำปีพร้อม
+แจ้งเตือนกิจกรรมใกล้ถึง, กิจกรรมขยะแลกแต้ม, และแผงควบคุมผู้ดูแลระบบ
 
-First, run the development server:
+## สแตกเทคโนโลยี
+
+- Next.js 16 (App Router) + TypeScript + Tailwind CSS
+- Prisma ORM + SQLite (ไฟล์เดียว `dev.db`, ไม่ต้องติดตั้งฐานข้อมูลแยก)
+- Auth แบบ custom: bcryptjs (hash รหัสผ่าน) + jose (JWT ใน httpOnly cookie)
+- xlsx (SheetJS) สำหรับนำเข้า/ออกไฟล์ Excel
+
+## เริ่มต้นใช้งาน (Development)
 
 ```bash
+npm install
+cp .env.example .env   # ปรับ SESSION_SECRET ก่อนใช้งานจริง
+npm run db:migrate     # สร้างฐานข้อมูลตาม schema
+npm run db:seed        # สร้างผู้ใช้ admin เริ่มต้น + ข้อมูลตัวอย่าง
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+เปิด [http://localhost:3000](http://localhost:3000) แล้วล็อกอินด้วยบัญชี admin
+เริ่มต้น (ตั้งค่าได้ผ่าน `SEED_ADMIN_USERNAME` / `SEED_ADMIN_PASSWORD` ใน `.env`
+ก่อนรัน seed, ค่าเริ่มต้นคือ `admin` / `ChangeMe123!`) **โปรดเปลี่ยนรหัสผ่านทันที
+หลังใช้งานจริง**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## คำสั่งที่ใช้บ่อย
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| คำสั่ง | คำอธิบาย |
+| --- | --- |
+| `npm run dev` | รันเซิร์ฟเวอร์สำหรับพัฒนา |
+| `npm run build` | สร้างไฟล์สำหรับ production |
+| `npm run start` | รันเซิร์ฟเวอร์ production (ต้อง build ก่อน) |
+| `npm run lint` | ตรวจสอบโค้ดด้วย ESLint |
+| `npm run db:migrate` | รัน Prisma migration |
+| `npm run db:seed` | สร้างข้อมูลเริ่มต้น (admin, โครงสร้างตัวอย่าง, ประเภทขยะ) |
+| `npm run db:generate` | สร้าง Prisma Client ใหม่หลังแก้ schema |
 
-## Learn More
+## บทบาทผู้ใช้งานและสิทธิ์
 
-To learn more about Next.js, take a look at the following resources:
+ระบบมี 5 บทบาท: ผู้ดูแลระบบ (ADMIN), ประธานนักเรียน, รองประธานนักเรียน,
+หัวหน้าฝ่าย, สมาชิกสภานักเรียน แต่ละบัญชีมีชุดสิทธิ์ย่อยที่ปรับได้เป็นรายคน
+(เช่น จัดการโครงสร้าง, บันทึก/ดูประวัติคะแนนความประพฤติ, จัดการรายชื่อนักเรียน,
+จัดการแผนงาน, จัดการคะแนนขยะแลกแต้ม, จัดการผู้ใช้, ดู log, จัดการตั้งค่าเว็บไซต์)
+บัญชี ADMIN มีสิทธิ์ทุกอย่างเสมอ ผู้ใช้ที่ได้รับสิทธิ์ "จัดการผู้ใช้" แต่ไม่ใช่
+ADMIN จะแก้ไข/ลบบัญชี ADMIN หรือให้สิทธิ์จัดการผู้ใช้แก่คนอื่นไม่ได้
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+ไม่มีการสมัครสมาชิกเอง — เฉพาะ ADMIN (หรือผู้ที่ได้รับสิทธิ์จัดการผู้ใช้)
+เท่านั้นที่สร้างบัญชีใหม่ได้ ผ่านเมนู "จัดการผู้ใช้งาน"
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## การนำเข้าข้อมูลนักเรียนจาก Excel
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+หน้า "รายชื่อนักเรียน > นำเข้าข้อมูลจาก Excel" มีไฟล์ตัวอย่างให้ดาวน์โหลด
+(คอลัมน์: รหัสนักเรียน, คำนำหน้า, ชื่อ, นามสกุล, ห้อง) หากรหัสนักเรียนซ้ำกับ
+ที่มีอยู่แล้ว ระบบจะอัปเดตข้อมูลแทนการสร้างใหม่ และแสดงสรุปผล/ข้อผิดพลาด
+รายแถวหลังนำเข้า
