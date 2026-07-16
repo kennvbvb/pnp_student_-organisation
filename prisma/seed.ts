@@ -84,6 +84,25 @@ async function main() {
     console.log("Seeded sample waste types.");
   }
 
+  const reasonCount = await prisma.conductReason.count();
+  if (reasonCount === 0) {
+    await prisma.conductReason.createMany({
+      data: [
+        { text: "มาสาย", type: "DEDUCT", sortOrder: 0 },
+        { text: "แต่งกายผิดระเบียบ", type: "DEDUCT", sortOrder: 1 },
+        { text: "ใช้โทรศัพท์ในเวลาเรียน", type: "DEDUCT", sortOrder: 2 },
+        { text: "ไม่เข้าแถว", type: "DEDUCT", sortOrder: 3 },
+        { text: "ทะเลาะวิวาท", type: "DEDUCT", sortOrder: 4 },
+        { text: "ทิ้งขยะไม่เป็นที่", type: "DEDUCT", sortOrder: 5 },
+        { text: "ช่วยเหลืองานส่วนรวม", type: "ADD", sortOrder: 0 },
+        { text: "ทำความดี/จิตอาสา", type: "ADD", sortOrder: 1 },
+        { text: "เก็บของได้ส่งคืน", type: "ADD", sortOrder: 2 },
+        { text: "เป็นตัวแทนทำกิจกรรม", type: "ADD", sortOrder: 3 },
+      ],
+    });
+    console.log("Seeded sample conduct reasons.");
+  }
+
   const settingCount = await prisma.siteSetting.count();
   if (settingCount === 0) {
     await prisma.siteSetting.createMany({

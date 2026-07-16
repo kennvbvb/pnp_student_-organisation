@@ -51,7 +51,7 @@ function PositionForm({
           name="title"
           required
           defaultValue={editing?.title ?? ""}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div>
@@ -61,7 +61,7 @@ function PositionForm({
         <select
           name="parentId"
           defaultValue={editing?.parentId ?? ""}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         >
           <option value="">-- ไม่มี (ตำแหน่งสูงสุด) --</option>
           {positions
@@ -80,7 +80,7 @@ function PositionForm({
         <input
           name="holderName"
           defaultValue={editing?.holderName ?? ""}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div>
@@ -91,7 +91,7 @@ function PositionForm({
           type="number"
           name="sortOrder"
           defaultValue={editing?.sortOrder ?? 0}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
 
@@ -99,7 +99,7 @@ function PositionForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+          className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-60"
         >
           {pending ? "กำลังบันทึก..." : editing ? "บันทึกการแก้ไข" : "เพิ่มตำแหน่ง"}
         </button>
@@ -165,7 +165,7 @@ export default function PositionManager({
                   <button
                     type="button"
                     onClick={() => setEditing(p)}
-                    className="mr-3 text-emerald-600 hover:underline"
+                    className="mr-3 text-blue-800 hover:underline"
                   >
                     แก้ไข
                   </button>

@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
+import { classifyLevel } from "@/lib/level";
 import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import AlertBanner from "@/components/AlertBanner";
@@ -12,6 +13,7 @@ import {
 } from "@/components/icons";
 
 const UPCOMING_WINDOW_DAYS = 7;
+const NOTIFY_WINDOW_DAYS = 7;
 
 function formatThaiDate(date: Date) {
   return new Intl.DateTimeFormat("th-TH", {
@@ -21,13 +23,25 @@ function formatThaiDate(date: Date) {
   }).format(date);
 }
 
+function formatDateTime(date: Date) {
+  return new Intl.DateTimeFormat("th-TH", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export default async function DashboardPage() {
   const user = await requireUser();
+  const isAdmin = user.role === "ADMIN";
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const upcomingUntil = new Date(now);
   upcomingUntil.setDate(upcomingUntil.getDate() + UPCOMING_WINDOW_DAYS);
+  const notifySince = new Date(now);
+  notifySince.setDate(notifySince.getDate() - NOTIFY_WINDOW_DAYS);
 
   const [
     studentCount,
@@ -35,13 +49,17 @@ export default async function DashboardPage() {
     conductThisMonth,
     wasteThisMonth,
     upcomingActivities,
+    students,
+    roomRecycleGroups,
+    studentRecycleGroups,
+    recentConduct,
+    recentRecycle,
   ] = await Promise.all([
     prisma.student.count({ where: { active: true } }),
     prisma.councilPosition.count(),
     prisma.conductDeduction.aggregate({
-      _sum: { amount: true },
       _count: true,
-      where: { createdAt: { gte: startOfMonth } },
+      where: { createdAt: { gte: startOfMonth }, type: "DEDUCT" },
     }),
     prisma.wasteScoreEntry.aggregate({
       _sum: { pointsAwarded: true },
@@ -52,17 +70,87 @@ export default async function DashboardPage() {
       orderBy: { startDate: "asc" },
       take: 5,
     }),
+    prisma.student.findMany({
+      where: { active: true },
+      select: {
+        id: true,
+        studentCode: true,
+        prefix: true,
+        firstName: true,
+        lastName: true,
+        classRoom: true,
+        conductScore: true,
+      },
+      orderBy: [{ classRoom: "asc" }, { studentCode: "asc" }],
+    }),
+    prisma.wasteScoreEntry.groupBy({
+      by: ["classRoom"],
+      where: { targetType: "ROOM" },
+      _sum: { pointsAwarded: true },
+    }),
+    prisma.wasteScoreEntry.groupBy({
+      by: ["studentId"],
+      where: { targetType: "STUDENT" },
+      _sum: { pointsAwarded: true },
+    }),
+    prisma.conductDeduction.findMany({
+      where: { createdAt: { gte: notifySince } },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      include: {
+        student: { select: { firstName: true, lastName: true, classRoom: true } },
+      },
+    }),
+    prisma.wasteScoreEntry.findMany({
+      where: { createdAt: { gte: notifySince } },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      include: {
+        wasteType: { select: { name: true } },
+        student: { select: { firstName: true, lastName: true } },
+      },
+    }),
   ]);
 
+  // Recycle lookup maps
+  const roomRecycle = new Map<string, number>();
+  for (const g of roomRecycleGroups) {
+    if (g.classRoom) roomRecycle.set(g.classRoom, g._sum.pointsAwarded ?? 0);
+  }
+  const studentRecycle = new Map<string, number>();
+  for (const g of studentRecycleGroups) {
+    if (g.studentId) studentRecycle.set(g.studentId, g._sum.pointsAwarded ?? 0);
+  }
+
+  // Feature 5: kindergarten — aggregate per room
+  const kinderRooms = new Map<
+    string,
+    { conductTotal: number; count: number }
+  >();
+  // Feature 6: primary — per individual
+  const primaryStudents = students.filter(
+    (s) => classifyLevel(s.classRoom) === "primary",
+  );
+  for (const s of students) {
+    if (classifyLevel(s.classRoom) !== "kindergarten") continue;
+    const cur = kinderRooms.get(s.classRoom) ?? { conductTotal: 0, count: 0 };
+    cur.conductTotal += s.conductScore;
+    cur.count += 1;
+    kinderRooms.set(s.classRoom, cur);
+  }
+  const kinderRoomRows = [...kinderRooms.entries()].sort((a, b) =>
+    a[0].localeCompare(b[0], "th"),
+  );
+
   return (
-    <div>
+    <div className="space-y-8">
       <PageHeader
         title={`สวัสดี, ${user.fullName}`}
         description="ภาพรวมระบบสภานักเรียนโรงเรียนวัดพนมพริก"
       />
 
       {upcomingActivities.length > 0 && (
-        <div className="mb-6">
+        <div>
           <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-600">
             <BellIcon className="h-4 w-4 text-amber-500" />
             กิจกรรมที่ใกล้ถึง
@@ -85,6 +173,90 @@ export default async function DashboardPage() {
         </div>
       )}
 
+      {/* Feature 7: admin notifications */}
+      {isAdmin && (
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-600">
+            <BellIcon className="h-4 w-4 text-blue-800" />
+            การแจ้งเตือนสำหรับผู้ดูแลระบบ
+          </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="mb-3 text-sm font-semibold text-slate-700">
+                คะแนนความประพฤติล่าสุด ({NOTIFY_WINDOW_DAYS} วัน)
+              </p>
+              {recentConduct.length === 0 ? (
+                <p className="text-sm text-slate-400">ไม่มีรายการ</p>
+              ) : (
+                <ul className="space-y-2">
+                  {recentConduct.map((c) => (
+                    <li
+                      key={c.id}
+                      className="flex items-center justify-between gap-2 text-sm"
+                    >
+                      <span className="text-slate-700">
+                        {c.student.firstName} {c.student.lastName}{" "}
+                        <span className="text-xs text-slate-400">
+                          ({c.student.classRoom})
+                        </span>
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <span
+                          className={`font-semibold ${c.type === "ADD" ? "text-emerald-600" : "text-red-600"}`}
+                        >
+                          {c.type === "ADD" ? "+" : "-"}
+                          {c.amount}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {formatDateTime(c.createdAt)}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="mb-3 text-sm font-semibold text-slate-700">
+                กิจกรรมขยะแลกแต้มล่าสุด ({NOTIFY_WINDOW_DAYS} วัน)
+              </p>
+              {recentRecycle.length === 0 ? (
+                <p className="text-sm text-slate-400">ไม่มีรายการ</p>
+              ) : (
+                <ul className="space-y-2">
+                  {recentRecycle.map((r) => (
+                    <li
+                      key={r.id}
+                      className="flex items-center justify-between gap-2 text-sm"
+                    >
+                      <span className="text-slate-700">
+                        {r.targetType === "ROOM"
+                          ? `ห้อง ${r.classRoom}`
+                          : r.student
+                            ? `${r.student.firstName} ${r.student.lastName}`
+                            : "—"}{" "}
+                        <span className="text-xs text-slate-400">
+                          ({r.wasteType.name})
+                        </span>
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <span className="font-semibold text-emerald-600">
+                          +{r.pointsAwarded}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {formatDateTime(r.createdAt)}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="นักเรียนในระบบ"
@@ -103,7 +275,7 @@ export default async function DashboardPage() {
         <StatCard
           label="การลดคะแนนความประพฤติเดือนนี้"
           value={conductThisMonth._count}
-          hint={`รวม ${conductThisMonth._sum.amount ?? 0} คะแนน`}
+          hint="ครั้ง"
           icon={ConductIcon}
           accent="rose"
         />
@@ -114,6 +286,95 @@ export default async function DashboardPage() {
           icon={RecycleIcon}
           accent="emerald"
         />
+      </div>
+
+      {/* Feature 5: kindergarten per room */}
+      <div>
+        <h2 className="mb-3 text-base font-bold text-slate-800">
+          ระดับอนุบาล — คะแนนรวมรายห้อง
+        </h2>
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+              <tr>
+                <th className="px-4 py-3">ห้อง</th>
+                <th className="px-4 py-3">จำนวนนักเรียน</th>
+                <th className="px-4 py-3">คะแนนความประพฤติรวม</th>
+                <th className="px-4 py-3">คะแนนขยะแลกแต้มรวม</th>
+              </tr>
+            </thead>
+            <tbody>
+              {kinderRoomRows.map(([room, data]) => (
+                <tr key={room} className="border-b border-slate-100 last:border-0">
+                  <td className="px-4 py-3 font-medium text-slate-800">
+                    {room}
+                  </td>
+                  <td className="px-4 py-3 text-slate-500">{data.count} คน</td>
+                  <td className="px-4 py-3 font-semibold text-blue-900">
+                    {data.conductTotal}
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-emerald-600">
+                    {roomRecycle.get(room) ?? 0}
+                  </td>
+                </tr>
+              ))}
+              {kinderRoomRows.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                    ยังไม่มีข้อมูลห้องระดับอนุบาล (ชื่อห้องต้องขึ้นต้นด้วย อ. หรือ อนุบาล)
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Feature 6: primary per individual */}
+      <div>
+        <h2 className="mb-3 text-base font-bold text-slate-800">
+          ระดับประถมศึกษา — คะแนนรายบุคคล
+        </h2>
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+              <tr>
+                <th className="px-4 py-3">รหัส</th>
+                <th className="px-4 py-3">ชื่อ-นามสกุล</th>
+                <th className="px-4 py-3">ห้อง</th>
+                <th className="px-4 py-3">คะแนนความประพฤติ</th>
+                <th className="px-4 py-3">คะแนนขยะแลกแต้ม</th>
+              </tr>
+            </thead>
+            <tbody>
+              {primaryStudents.map((s) => (
+                <tr key={s.id} className="border-b border-slate-100 last:border-0">
+                  <td className="px-4 py-3 text-slate-500">{s.studentCode}</td>
+                  <td className="px-4 py-3 font-medium text-slate-800">
+                    {s.prefix ?? ""}
+                    {s.firstName} {s.lastName}
+                  </td>
+                  <td className="px-4 py-3 text-slate-500">{s.classRoom}</td>
+                  <td
+                    className={`px-4 py-3 font-semibold ${s.conductScore < 60 ? "text-red-600" : "text-blue-900"}`}
+                  >
+                    {s.conductScore}
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-emerald-600">
+                    {studentRecycle.get(s.id) ?? 0}
+                  </td>
+                </tr>
+              ))}
+              {primaryStudents.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
+                    ยังไม่มีข้อมูลนักเรียนระดับประถม (ชื่อห้องต้องขึ้นต้นด้วย ป. หรือ ประถม)
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

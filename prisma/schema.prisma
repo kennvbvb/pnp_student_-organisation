@@ -23,6 +23,11 @@ enum WasteTargetType {
   STUDENT
 }
 
+enum ConductEntryType {
+  ADD
+  DEDUCT
+}
+
 model User {
   id           String   @id @default(cuid())
   username     String   @unique
@@ -117,19 +122,29 @@ model Student {
 }
 
 model ConductDeduction {
-  id              String   @id @default(cuid())
-  studentId       String
-  amount          Int
-  reason          String
-  category        String?
-  recordedByUserId String
-  createdAt       DateTime @default(now())
+  id               String           @id @default(cuid())
+  studentId        String
+  type             ConductEntryType @default(DEDUCT)
+  amount           Int
+  reason           String
+  category         String?
+  recordedByUserId String?
+  createdAt        DateTime         @default(now())
 
-  student     Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  recordedBy  User    @relation(fields: [recordedByUserId], references: [id])
+  student    Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  recordedBy User?   @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
 
   @@index([studentId])
   @@index([createdAt])
+}
+
+model ConductReason {
+  id        String           @id @default(cuid())
+  text      String           @unique
+  type      ConductEntryType @default(DEDUCT)
+  sortOrder Int              @default(0)
+  active    Boolean          @default(true)
+  createdAt DateTime         @default(now())
 }
 
 model PlanActivity {
@@ -140,11 +155,11 @@ model PlanActivity {
   endDate         DateTime?
   month           Int
   year            Int
-  createdByUserId String
+  createdByUserId String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  createdBy User @relation(fields: [createdByUserId], references: [id])
+  createdBy User? @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
 
   @@index([year, month])
   @@index([startDate])
@@ -169,12 +184,12 @@ model WasteScoreEntry {
   quantity         Float
   pointsAwarded    Float
   note             String?
-  recordedByUserId String
+  recordedByUserId String?
   createdAt        DateTime        @default(now())
 
   student     Student?  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   wasteType   WasteType @relation(fields: [wasteTypeId], references: [id])
-  recordedBy  User      @relation(fields: [recordedByUserId], references: [id])
+  recordedBy  User?     @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
 
   @@index([classRoom])
   @@index([createdAt])

@@ -14,9 +14,9 @@ export default function LoginPage() {
   return (
     <div className="relative flex min-h-screen flex-1 items-center justify-center overflow-hidden px-4 py-12">
       {/* decorative background */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900" />
       <div className="pointer-events-none absolute -left-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-32 -right-16 h-96 w-96 rounded-full bg-emerald-300/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 -right-16 h-96 w-96 rounded-full bg-blue-400/20 blur-3xl" />
 
       <div className="relative w-full max-w-sm animate-fade-in-up">
         <div className="mb-6 text-center">
@@ -24,7 +24,7 @@ export default function LoginPage() {
             สภ
           </div>
           <h1 className="text-xl font-bold text-white">ระบบสภานักเรียน</h1>
-          <p className="mt-1 text-sm text-emerald-50/80">
+          <p className="mt-1 text-sm text-blue-100/80">
             โรงเรียนวัดพนมพริก
           </p>
         </div>
@@ -47,7 +47,7 @@ export default function LoginPage() {
                 type="text"
                 required
                 autoComplete="username"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm transition-colors focus:border-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-800/20"
               />
             </div>
             <div>
@@ -63,7 +63,7 @@ export default function LoginPage() {
                 type="password"
                 required
                 autoComplete="current-password"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm transition-colors focus:border-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-800/20"
               />
             </div>
           </div>
@@ -77,7 +77,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={pending}
-            className="mt-6 w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-500/30 transition-all hover:from-emerald-700 hover:to-teal-700 hover:shadow-md disabled:opacity-60"
+            className="mt-6 w-full rounded-xl bg-gradient-to-r from-blue-900 to-indigo-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-900/30 transition-all hover:from-blue-800 hover:to-indigo-800 hover:shadow-md disabled:opacity-60"
           >
             {pending ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
           </button>

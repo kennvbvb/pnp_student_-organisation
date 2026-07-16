@@ -58,7 +58,7 @@ export default async function StudentsPage({
           canManage ? (
             <Link
               href="/students/import"
-              className="rounded-lg border border-emerald-600 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+              className="rounded-lg border border-blue-900 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50"
             >
               นำเข้าข้อมูลจาก Excel
             </Link>
@@ -72,12 +72,12 @@ export default async function StudentsPage({
           name="q"
           defaultValue={q}
           placeholder="ค้นหาชื่อ หรือรหัสนักเรียน"
-          className="w-64 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-64 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
         <select
           name="classRoom"
           defaultValue={classRoom}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         >
           <option value="">ทุกห้อง</option>
           {classRooms.map((c) => (

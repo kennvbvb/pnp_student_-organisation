@@ -90,18 +90,18 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       href={item.href}
       className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
         active
-          ? "bg-emerald-50 text-emerald-700"
+          ? "bg-blue-50 text-blue-900"
           : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
       }`}
     >
       <span
-        className={`absolute left-0 top-1/2 h-6 -translate-y-1/2 rounded-r-full bg-emerald-500 transition-all ${
+        className={`absolute left-0 top-1/2 h-6 -translate-y-1/2 rounded-r-full bg-blue-900 transition-all ${
           active ? "w-1" : "w-0"
         }`}
       />
       <Icon
         className={`h-5 w-5 shrink-0 transition-colors ${
-          active ? "text-emerald-600" : "text-slate-400 group-hover:text-slate-600"
+          active ? "text-blue-900" : "text-slate-400 group-hover:text-slate-600"
         }`}
       />
       <span className="truncate">{item.label}</span>
@@ -118,7 +118,7 @@ export default function Sidebar({ user }: { user: CurrentUser }) {
   return (
     <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white/80 backdrop-blur">
       <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-5">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-lg font-bold text-white shadow-sm shadow-emerald-500/30">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-800 to-indigo-900 text-lg font-bold text-white shadow-sm shadow-blue-900/30">
           สภ
         </div>
         <div className="min-w-0">

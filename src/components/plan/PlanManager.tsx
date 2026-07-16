@@ -63,7 +63,7 @@ function AddActivityForm({ onDone }: { onDone: () => void }) {
         <input
           name="title"
           required
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div>
@@ -74,7 +74,7 @@ function AddActivityForm({ onDone }: { onDone: () => void }) {
           type="date"
           name="startDate"
           required
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div>
@@ -84,7 +84,7 @@ function AddActivityForm({ onDone }: { onDone: () => void }) {
         <input
           type="date"
           name="endDate"
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div>
@@ -93,14 +93,14 @@ function AddActivityForm({ onDone }: { onDone: () => void }) {
         </label>
         <input
           name="description"
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div className="flex items-end lg:col-span-5">
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+          className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-60"
         >
           {pending ? "กำลังบันทึก..." : "เพิ่มกิจกรรม"}
         </button>
@@ -137,7 +137,7 @@ export default function PlanManager({
             <button
               type="button"
               onClick={() => setShowAdd(true)}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              className="rounded-xl bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800"
             >
               + เพิ่มกิจกรรม
             </button>
@@ -145,30 +145,43 @@ export default function PlanManager({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Vertical month timeline (feature 4) */}
+      <div className="space-y-3">
         {THAI_MONTHS.map((monthName, idx) => {
           const month = idx + 1;
           const items = (grouped.get(month) ?? []).sort(
-            (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+            (a, b) =>
+              new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
           );
           return (
             <div
               key={month}
-              className="rounded-xl border border-slate-200 bg-white p-4"
+              className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row"
             >
-              <h3 className="mb-3 text-sm font-semibold text-slate-700">
-                {monthName}
-              </h3>
-              {items.length === 0 ? (
-                <p className="text-xs text-slate-400">ไม่มีกิจกรรม</p>
-              ) : (
-                <ul className="space-y-2">
-                  {items.map((a) => (
-                    <li
-                      key={a.id}
-                      className="rounded-lg bg-slate-50 px-3 py-2 text-sm"
-                    >
-                      <div className="flex items-start justify-between gap-2">
+              <div className="flex shrink-0 items-center gap-3 sm:w-40 sm:flex-col sm:items-start sm:justify-start">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-900 text-sm font-bold text-white">
+                  {month}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-800">
+                    {monthName}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {items.length} กิจกรรม
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex-1 border-t border-dashed border-slate-200 pt-3 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
+                {items.length === 0 ? (
+                  <p className="text-sm text-slate-300">— ไม่มีกิจกรรม —</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {items.map((a) => (
+                      <li
+                        key={a.id}
+                        className="flex items-start justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm"
+                      >
                         <div>
                           <p className="font-medium text-slate-800">
                             {a.title}
@@ -188,9 +201,11 @@ export default function PlanManager({
                             <input type="hidden" name="id" value={a.id} />
                             <button
                               type="submit"
-                              className="text-xs text-red-600 hover:underline"
+                              className="shrink-0 text-xs text-red-600 hover:underline"
                               onClick={(e) => {
-                                if (!confirm(`ลบกิจกรรม "${a.title}" ใช่หรือไม่?`)) {
+                                if (
+                                  !confirm(`ลบกิจกรรม "${a.title}" ใช่หรือไม่?`)
+                                ) {
                                   e.preventDefault();
                                 }
                               }}
@@ -199,11 +214,11 @@ export default function PlanManager({
                             </button>
                           </form>
                         )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           );
         })}

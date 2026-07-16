@@ -85,7 +85,7 @@ export default function WasteTypeManager({
         <button
           type="button"
           onClick={() => setShowAdd((v) => !v)}
-          className="text-sm text-emerald-600 hover:underline"
+          className="text-sm text-blue-800 hover:underline"
         >
           {showAdd ? "ปิด" : "+ เพิ่มประเภทขยะ"}
         </button>

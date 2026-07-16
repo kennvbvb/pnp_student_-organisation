@@ -1,65 +1,53 @@
 import { requirePermission } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import PageHeader from "@/components/PageHeader";
-import ConductStudentList from "@/components/conduct/ConductForm";
+import ConductForm from "@/components/conduct/ConductForm";
+import ReasonManager from "@/components/conduct/ReasonManager";
 
-export default async function ConductPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string }>;
-}) {
+export default async function ConductPage() {
   await requirePermission("MANAGE_CONDUCT");
-  const { q = "" } = await searchParams;
 
-  const students = q
-    ? await prisma.student.findMany({
-        where: {
-          active: true,
-          OR: [
-            { studentCode: { contains: q } },
-            { firstName: { contains: q } },
-            { lastName: { contains: q } },
-            { classRoom: { contains: q } },
-          ],
-        },
-        orderBy: [{ classRoom: "asc" }, { studentCode: "asc" }],
-        take: 50,
-        select: {
-          id: true,
-          studentCode: true,
-          prefix: true,
-          firstName: true,
-          lastName: true,
-          classRoom: true,
-          conductScore: true,
-        },
-      })
-    : [];
+  const [students, classRoomRows, reasons] = await Promise.all([
+    prisma.student.findMany({
+      where: { active: true },
+      orderBy: [{ classRoom: "asc" }, { studentCode: "asc" }],
+      select: {
+        id: true,
+        studentCode: true,
+        prefix: true,
+        firstName: true,
+        lastName: true,
+        classRoom: true,
+        conductScore: true,
+      },
+    }),
+    prisma.student.findMany({
+      where: { active: true },
+      distinct: ["classRoom"],
+      select: { classRoom: true },
+      orderBy: { classRoom: "asc" },
+    }),
+    prisma.conductReason.findMany({
+      where: { active: true },
+      orderBy: [{ type: "asc" }, { sortOrder: "asc" }],
+      select: { id: true, text: true, type: true },
+    }),
+  ]);
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="บันทึกคะแนนความประพฤติ"
-        description="ค้นหานักเรียนด้วยรหัส ชื่อ หรือห้องเรียน เพื่อบันทึกการลดคะแนน"
+        description="เลือกห้อง → เลือกนักเรียน แล้วเพิ่มหรือลดคะแนนพร้อมระบุเหตุผล"
       />
 
-      <form className="mb-4 flex gap-3" method="get">
-        <input
-          type="text"
-          name="q"
-          defaultValue={q}
-          placeholder="ค้นหารหัสนักเรียน ชื่อ หรือห้อง"
-          className="w-80 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-        />
-        <button
-          type="submit"
-          className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-        >
-          ค้นหา
-        </button>
-      </form>
+      <ConductForm
+        students={students}
+        classRooms={classRoomRows.map((c) => c.classRoom)}
+        reasons={reasons}
+      />
 
-      <ConductStudentList students={students} />
+      <ReasonManager reasons={reasons} />
     </div>
   );
 }
