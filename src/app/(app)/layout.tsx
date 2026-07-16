@@ -10,8 +10,14 @@ export default async function AppLayout({
 
   return (
     <div className="flex min-h-screen flex-1">
-      <Sidebar user={user} />
-      <main className="flex-1 overflow-y-auto p-6 lg:p-8">{children}</main>
+      <div className="sticky top-0 h-screen">
+        <Sidebar user={user} />
+      </div>
+      <main className="flex-1 overflow-x-hidden">
+        <div className="mx-auto max-w-6xl px-5 py-6 lg:px-8 lg:py-8">
+          <div className="animate-fade-in-up">{children}</div>
+        </div>
+      </main>
     </div>
   );
 }

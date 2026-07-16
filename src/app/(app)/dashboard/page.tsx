@@ -3,6 +3,13 @@ import { prisma } from "@/lib/prisma";
 import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import AlertBanner from "@/components/AlertBanner";
+import {
+  StudentsIcon,
+  StructureIcon,
+  ConductIcon,
+  RecycleIcon,
+  BellIcon,
+} from "@/components/icons";
 
 const UPCOMING_WINDOW_DAYS = 7;
 
@@ -55,39 +62,57 @@ export default async function DashboardPage() {
       />
 
       {upcomingActivities.length > 0 && (
-        <div className="mb-6 space-y-2">
-          {upcomingActivities.map((activity) => {
-            const daysLeft = Math.ceil(
-              (activity.startDate.getTime() - now.getTime()) /
-                (1000 * 60 * 60 * 24),
-            );
-            return (
-              <AlertBanner key={activity.id} variant="warning">
-                ใกล้ถึงกิจกรรม <strong>{activity.title}</strong> ในวันที่{" "}
-                {formatThaiDate(activity.startDate)}{" "}
-                {daysLeft <= 0 ? "(วันนี้)" : `(อีก ${daysLeft} วัน)`}
-              </AlertBanner>
-            );
-          })}
+        <div className="mb-6">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-600">
+            <BellIcon className="h-4 w-4 text-amber-500" />
+            กิจกรรมที่ใกล้ถึง
+          </div>
+          <div className="space-y-2">
+            {upcomingActivities.map((activity) => {
+              const daysLeft = Math.ceil(
+                (activity.startDate.getTime() - now.getTime()) /
+                  (1000 * 60 * 60 * 24),
+              );
+              return (
+                <AlertBanner key={activity.id} variant="warning">
+                  ใกล้ถึงกิจกรรม <strong>{activity.title}</strong> ในวันที่{" "}
+                  {formatThaiDate(activity.startDate)}{" "}
+                  {daysLeft <= 0 ? "(วันนี้)" : `(อีก ${daysLeft} วัน)`}
+                </AlertBanner>
+              );
+            })}
+          </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="นักเรียนในระบบ" value={studentCount} hint="คน" />
+        <StatCard
+          label="นักเรียนในระบบ"
+          value={studentCount}
+          hint="คน"
+          icon={StudentsIcon}
+          accent="sky"
+        />
         <StatCard
           label="ตำแหน่งในโครงสร้างสภา"
           value={positionCount}
           hint="ตำแหน่ง"
+          icon={StructureIcon}
+          accent="violet"
         />
         <StatCard
           label="การลดคะแนนความประพฤติเดือนนี้"
           value={conductThisMonth._count}
           hint={`รวม ${conductThisMonth._sum.amount ?? 0} คะแนน`}
+          icon={ConductIcon}
+          accent="rose"
         />
         <StatCard
           label="คะแนนขยะแลกแต้มเดือนนี้"
           value={wasteThisMonth._sum.pointsAwarded ?? 0}
           hint="คะแนนสะสม"
+          icon={RecycleIcon}
+          accent="emerald"
         />
       </div>
     </div>
