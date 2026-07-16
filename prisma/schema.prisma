@@ -1,0 +1,186 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  ADMIN
+  PRESIDENT
+  VICE_PRESIDENT
+  DEPT_HEAD
+  MEMBER
+}
+
+enum WasteTargetType {
+  ROOM
+  STUDENT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  fullName     String
+  role         Role
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  permissions       UserPermission[]
+  loginLogs         LoginLog[]
+  auditLogs         AuditLog[]
+  conductDeductions ConductDeduction[]
+  planActivities    PlanActivity[]
+  wasteScoreEntries WasteScoreEntry[]
+}
+
+model UserPermission {
+  id         String @id @default(cuid())
+  userId     String
+  permission String
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permission])
+  @@index([userId])
+}
+
+model LoginLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  username  String
+  success   Boolean
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String?
+  detail     String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model CouncilPosition {
+  id             String   @id @default(cuid())
+  title          String
+  parentId       String?
+  sortOrder      Int      @default(0)
+  holderName     String?
+  holderStudentId String?
+  photoUrl       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  parent   CouncilPosition?  @relation("PositionHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children CouncilPosition[] @relation("PositionHierarchy")
+  holderStudent Student?     @relation(fields: [holderStudentId], references: [id], onDelete: SetNull)
+
+  @@index([parentId])
+}
+
+model Student {
+  id           String   @id @default(cuid())
+  studentCode  String   @unique
+  prefix       String?
+  firstName    String
+  lastName     String
+  classRoom    String
+  conductScore Int      @default(100)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  conductDeductions ConductDeduction[]
+  wasteScoreEntries WasteScoreEntry[]
+  councilPositions  CouncilPosition[]
+
+  @@index([classRoom])
+}
+
+model ConductDeduction {
+  id              String   @id @default(cuid())
+  studentId       String
+  amount          Int
+  reason          String
+  category        String?
+  recordedByUserId String
+  createdAt       DateTime @default(now())
+
+  student     Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  recordedBy  User    @relation(fields: [recordedByUserId], references: [id])
+
+  @@index([studentId])
+  @@index([createdAt])
+}
+
+model PlanActivity {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  startDate       DateTime
+  endDate         DateTime?
+  month           Int
+  year            Int
+  createdByUserId String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  createdBy User @relation(fields: [createdByUserId], references: [id])
+
+  @@index([year, month])
+  @@index([startDate])
+}
+
+model WasteType {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  unit          String
+  pointsPerUnit Float
+  createdAt     DateTime @default(now())
+
+  wasteScoreEntries WasteScoreEntry[]
+}
+
+model WasteScoreEntry {
+  id               String          @id @default(cuid())
+  targetType       WasteTargetType
+  classRoom        String?
+  studentId        String?
+  wasteTypeId      String
+  quantity         Float
+  pointsAwarded    Float
+  note             String?
+  recordedByUserId String
+  createdAt        DateTime        @default(now())
+
+  student     Student?  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  wasteType   WasteType @relation(fields: [wasteTypeId], references: [id])
+  recordedBy  User      @relation(fields: [recordedByUserId], references: [id])
+
+  @@index([classRoom])
+  @@index([createdAt])
+}
+
+model SiteSetting {
+  key   String @id
+  value String
+}

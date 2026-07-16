@@ -1,0 +1,60 @@
+import type { Role } from "@/generated/prisma/enums";
+
+export const PERMISSIONS = [
+  "MANAGE_USERS",
+  "VIEW_LOGS",
+  "MANAGE_STRUCTURE",
+  "MANAGE_STUDENTS",
+  "MANAGE_CONDUCT",
+  "VIEW_CONDUCT_HISTORY",
+  "MANAGE_PLAN",
+  "MANAGE_RECYCLE",
+  "MANAGE_SETTINGS",
+] as const;
+
+export type Permission = (typeof PERMISSIONS)[number];
+
+export const PERMISSION_LABELS: Record<Permission, string> = {
+  MANAGE_USERS: "จัดการผู้ใช้และสิทธิ์",
+  VIEW_LOGS: "ดูประวัติการใช้งาน (Log)",
+  MANAGE_STRUCTURE: "จัดการโครงสร้างสภานักเรียน",
+  MANAGE_STUDENTS: "จัดการรายชื่อนักเรียน",
+  MANAGE_CONDUCT: "บันทึกคะแนนความประพฤติ",
+  VIEW_CONDUCT_HISTORY: "ดูประวัติการลดคะแนนความประพฤติ",
+  MANAGE_PLAN: "จัดการแผนงานประจำปี",
+  MANAGE_RECYCLE: "บันทึกคะแนนกิจกรรมขยะแลกแต้ม",
+  MANAGE_SETTINGS: "จัดการตั้งค่าเว็บไซต์",
+};
+
+/** Permissions granted by default to a role when a user account is created. Admins can add/remove per-user afterward. */
+export const ROLE_DEFAULT_PERMISSIONS: Record<Role, Permission[]> = {
+  ADMIN: [...PERMISSIONS],
+  PRESIDENT: [
+    "VIEW_LOGS",
+    "MANAGE_STRUCTURE",
+    "MANAGE_STUDENTS",
+    "MANAGE_CONDUCT",
+    "VIEW_CONDUCT_HISTORY",
+    "MANAGE_PLAN",
+    "MANAGE_RECYCLE",
+  ],
+  VICE_PRESIDENT: [
+    "MANAGE_CONDUCT",
+    "VIEW_CONDUCT_HISTORY",
+    "MANAGE_PLAN",
+    "MANAGE_RECYCLE",
+  ],
+  DEPT_HEAD: ["MANAGE_CONDUCT", "MANAGE_RECYCLE"],
+  MEMBER: [],
+};
+
+export const ROLE_LABELS: Record<Role, string> = {
+  ADMIN: "ผู้ดูแลระบบ",
+  PRESIDENT: "ประธานนักเรียน",
+  VICE_PRESIDENT: "รองประธานนักเรียน",
+  DEPT_HEAD: "หัวหน้าฝ่าย",
+  MEMBER: "สมาชิกสภานักเรียน",
+};
+
+/** Permissions that only ADMIN accounts may grant, to prevent privilege escalation by delegated user-managers. */
+export const ADMIN_ONLY_GRANTABLE: Permission[] = ["MANAGE_USERS"];
