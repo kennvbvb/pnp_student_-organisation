@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import {
   createPositionAction,
   updatePositionAction,
@@ -13,36 +13,70 @@ type Position = {
   title: string;
   parentId: string | null;
   holderName: string | null;
+  holderStudentId: string | null;
   sortOrder: number;
 };
 
+type StudentOption = {
+  id: string;
+  studentCode: string;
+  firstName: string;
+  lastName: string;
+  classRoom: string;
+};
+
 const initialState: FormState = {};
+const inputCls =
+  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800";
 
 function PositionForm({
   positions,
+  students,
+  classRooms,
   editing,
   onDone,
 }: {
   positions: Position[];
+  students: StudentOption[];
+  classRooms: string[];
   editing: Position | null;
   onDone: () => void;
 }) {
   const action = editing ? updatePositionAction : createPositionAction;
   const [state, formAction, pending] = useActionState(action, initialState);
 
+  // Holder cascade: classroom -> student
+  const editingStudent = editing?.holderStudentId
+    ? students.find((s) => s.id === editing.holderStudentId)
+    : undefined;
+  const [holderClassRoom, setHolderClassRoom] = useState(
+    editingStudent?.classRoom ?? "",
+  );
+  const [holderStudentId, setHolderStudentId] = useState(
+    editing?.holderStudentId ?? "",
+  );
+
+  const holderStudents = useMemo(
+    () =>
+      holderClassRoom
+        ? students.filter((s) => s.classRoom === holderClassRoom)
+        : [],
+    [students, holderClassRoom],
+  );
+
   useEffect(() => {
-    if (editing && state.success) {
-      onDone();
-    }
+    if (editing && state.success) onDone();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   return (
     <form
       action={formAction}
-      className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-5"
+      className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-6"
     >
       {editing && <input type="hidden" name="id" value={editing.id} />}
+      <input type="hidden" name="holderStudentId" value={holderStudentId} />
+
       <div className="lg:col-span-2">
         <label className="mb-1 block text-xs font-medium text-slate-600">
           ชื่อตำแหน่ง
@@ -51,7 +85,7 @@ function PositionForm({
           name="title"
           required
           defaultValue={editing?.title ?? ""}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
+          className={inputCls}
         />
       </div>
       <div>
@@ -61,7 +95,7 @@ function PositionForm({
         <select
           name="parentId"
           defaultValue={editing?.parentId ?? ""}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
+          className={inputCls}
         >
           <option value="">-- ไม่มี (ตำแหน่งสูงสุด) --</option>
           {positions
@@ -75,13 +109,43 @@ function PositionForm({
       </div>
       <div>
         <label className="mb-1 block text-xs font-medium text-slate-600">
-          ผู้ดำรงตำแหน่ง
+          ผู้ดำรงตำแหน่ง — เลือกห้อง
         </label>
-        <input
-          name="holderName"
-          defaultValue={editing?.holderName ?? ""}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
-        />
+        <select
+          value={holderClassRoom}
+          onChange={(e) => {
+            setHolderClassRoom(e.target.value);
+            setHolderStudentId("");
+          }}
+          className={inputCls}
+        >
+          <option value="">-- ไม่ระบุ --</option>
+          {classRooms.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium text-slate-600">
+          เลือกรายชื่อ
+        </label>
+        <select
+          value={holderStudentId}
+          onChange={(e) => setHolderStudentId(e.target.value)}
+          disabled={!holderClassRoom}
+          className={`${inputCls} disabled:bg-slate-50 disabled:text-slate-400`}
+        >
+          <option value="">
+            {holderClassRoom ? "-- เลือกนักเรียน --" : "เลือกห้องก่อน"}
+          </option>
+          {holderStudents.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.firstName} {s.lastName}
+            </option>
+          ))}
+        </select>
       </div>
       <div>
         <label className="mb-1 block text-xs font-medium text-slate-600">
@@ -91,11 +155,11 @@ function PositionForm({
           type="number"
           name="sortOrder"
           defaultValue={editing?.sortOrder ?? 0}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
+          className={inputCls}
         />
       </div>
 
-      <div className="flex items-end gap-2 lg:col-span-5">
+      <div className="flex items-end gap-2 lg:col-span-6">
         <button
           type="submit"
           disabled={pending}
@@ -123,8 +187,12 @@ function PositionForm({
 
 export default function PositionManager({
   positions,
+  students,
+  classRooms,
 }: {
   positions: Position[];
+  students: StudentOption[];
+  classRooms: string[];
 }) {
   const [editing, setEditing] = useState<Position | null>(null);
   const positionMap = new Map(positions.map((p) => [p.id, p.title]));
@@ -132,7 +200,10 @@ export default function PositionManager({
   return (
     <div className="space-y-6">
       <PositionForm
+        key={editing?.id ?? "new"}
         positions={positions}
+        students={students}
+        classRooms={classRooms}
         editing={editing}
         onDone={() => setEditing(null)}
       />

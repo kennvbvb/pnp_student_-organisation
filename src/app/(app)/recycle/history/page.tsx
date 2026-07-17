@@ -1,7 +1,9 @@
 import { requireUser } from "@/lib/auth-guard";
+import { hasPermission } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
+import DeleteWasteButton from "@/components/recycle/DeleteWasteButton";
 
 function formatDateTime(date: Date) {
   return new Intl.DateTimeFormat("th-TH", {
@@ -11,7 +13,8 @@ function formatDateTime(date: Date) {
 }
 
 export default async function RecycleHistoryPage() {
-  await requireUser();
+  const user = await requireUser();
+  const canDelete = hasPermission(user, "DELETE_RECYCLE_HISTORY");
 
   const entries = await prisma.wasteScoreEntry.findMany({
     orderBy: { createdAt: "desc" },
@@ -145,6 +148,7 @@ export default async function RecycleHistoryPage() {
               <th className="px-4 py-3">จำนวน</th>
               <th className="px-4 py-3">คะแนนที่ได้</th>
               <th className="px-4 py-3">ผู้บันทึก</th>
+              {canDelete && <th className="px-4 py-3 text-right">จัดการ</th>}
             </tr>
           </thead>
           <tbody>
@@ -172,11 +176,22 @@ export default async function RecycleHistoryPage() {
                 <td className="px-4 py-3 text-slate-500">
                   {e.recordedBy?.fullName ?? "—"}
                 </td>
+                {canDelete && (
+                  <td className="px-4 py-3 text-right">
+                    <DeleteWasteButton
+                      id={e.id}
+                      label={`${e.wasteType.name} ${e.pointsAwarded} คะแนน`}
+                    />
+                  </td>
+                )}
               </tr>
             ))}
             {entries.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
+                <td
+                  colSpan={canDelete ? 7 : 6}
+                  className="px-4 py-6 text-center text-slate-400"
+                >
                   ยังไม่มีประวัติการบันทึกคะแนน
                 </td>
               </tr>

@@ -10,6 +10,8 @@ export const PERMISSIONS = [
   "DELETE_CONDUCT_HISTORY",
   "MANAGE_PLAN",
   "MANAGE_RECYCLE",
+  "DELETE_RECYCLE_HISTORY",
+  "EXPORT_DATA",
   "MANAGE_SETTINGS",
 ] as const;
 
@@ -25,6 +27,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   DELETE_CONDUCT_HISTORY: "ลบประวัติคะแนนความประพฤติ",
   MANAGE_PLAN: "จัดการแผนงานประจำปี",
   MANAGE_RECYCLE: "บันทึกคะแนนกิจกรรมขยะแลกแต้ม",
+  DELETE_RECYCLE_HISTORY: "ลบประวัติคะแนนขยะแลกแต้ม",
+  EXPORT_DATA: "ส่งออกข้อมูล (Export)",
   MANAGE_SETTINGS: "จัดการตั้งค่าเว็บไซต์",
 };
 
@@ -39,12 +43,14 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<Role, Permission[]> = {
     "VIEW_CONDUCT_HISTORY",
     "MANAGE_PLAN",
     "MANAGE_RECYCLE",
+    "EXPORT_DATA",
   ],
   VICE_PRESIDENT: [
     "MANAGE_CONDUCT",
     "VIEW_CONDUCT_HISTORY",
     "MANAGE_PLAN",
     "MANAGE_RECYCLE",
+    "EXPORT_DATA",
   ],
   DEPT_HEAD: ["MANAGE_CONDUCT", "MANAGE_RECYCLE"],
   MEMBER: [],

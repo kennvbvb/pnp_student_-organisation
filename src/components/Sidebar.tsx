@@ -19,6 +19,7 @@ import {
   LogIcon,
   SettingsIcon,
   LogoutIcon,
+  DownloadIcon,
 } from "@/components/icons";
 
 type IconType = ComponentType<SVGProps<SVGSVGElement>>;
@@ -49,6 +50,12 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/plan", label: "แผนงานประจำปี", icon: PlanIcon },
   { href: "/recycle", label: "ขยะแลกแต้ม", icon: RecycleIcon },
   { href: "/recycle/history", label: "ประวัติขยะแลกแต้ม", icon: HistoryIcon },
+  {
+    href: "/exports",
+    label: "ส่งออกข้อมูล",
+    icon: DownloadIcon,
+    permission: "EXPORT_DATA",
+  },
 ];
 
 const ADMIN_NAV_ITEMS: NavItem[] = [

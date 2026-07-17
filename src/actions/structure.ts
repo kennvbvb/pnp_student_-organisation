@@ -7,6 +7,17 @@ import { logAudit } from "@/lib/audit";
 
 export type FormState = { error?: string; success?: string };
 
+/** Denormalize the holder's display name from the selected student (kept for simple rendering). */
+async function resolveHolderName(holderStudentId: string | null) {
+  if (!holderStudentId) return null;
+  const student = await prisma.student.findUnique({
+    where: { id: holderStudentId },
+    select: { prefix: true, firstName: true, lastName: true },
+  });
+  if (!student) return null;
+  return `${student.prefix ?? ""}${student.firstName} ${student.lastName}`;
+}
+
 export async function createPositionAction(
   _prev: FormState,
   formData: FormData,
@@ -15,15 +26,17 @@ export async function createPositionAction(
 
   const title = String(formData.get("title") ?? "").trim();
   const parentId = String(formData.get("parentId") ?? "") || null;
-  const holderName = String(formData.get("holderName") ?? "").trim() || null;
+  const holderStudentId = String(formData.get("holderStudentId") ?? "") || null;
   const sortOrder = Number(formData.get("sortOrder") ?? 0) || 0;
 
   if (!title) {
     return { error: "กรุณากรอกชื่อตำแหน่ง" };
   }
 
+  const holderName = await resolveHolderName(holderStudentId);
+
   const position = await prisma.councilPosition.create({
-    data: { title, parentId, holderName, sortOrder },
+    data: { title, parentId, holderStudentId, holderName, sortOrder },
   });
 
   await logAudit({
@@ -48,7 +61,7 @@ export async function updatePositionAction(
   const id = String(formData.get("id") ?? "");
   const title = String(formData.get("title") ?? "").trim();
   const parentId = String(formData.get("parentId") ?? "") || null;
-  const holderName = String(formData.get("holderName") ?? "").trim() || null;
+  const holderStudentId = String(formData.get("holderStudentId") ?? "") || null;
   const sortOrder = Number(formData.get("sortOrder") ?? 0) || 0;
 
   if (!id || !title) {
@@ -59,9 +72,11 @@ export async function updatePositionAction(
     return { error: "ตำแหน่งไม่สามารถเป็นระดับบนของตัวเองได้" };
   }
 
+  const holderName = await resolveHolderName(holderStudentId);
+
   await prisma.councilPosition.update({
     where: { id },
-    data: { title, parentId, holderName, sortOrder },
+    data: { title, parentId, holderStudentId, holderName, sortOrder },
   });
 
   await logAudit({

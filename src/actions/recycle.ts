@@ -60,6 +60,31 @@ export async function deleteWasteTypeAction(formData: FormData) {
   revalidatePath("/recycle");
 }
 
+export async function deleteWasteEntryAction(formData: FormData) {
+  const user = await requirePermission("DELETE_RECYCLE_HISTORY");
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const entry = await prisma.wasteScoreEntry.findUnique({
+    where: { id },
+    include: { wasteType: { select: { name: true } } },
+  });
+  if (!entry) return;
+
+  await prisma.wasteScoreEntry.delete({ where: { id } });
+
+  await logAudit({
+    userId: user.id,
+    action: "DELETE",
+    entityType: "WasteScoreEntry",
+    entityId: id,
+    detail: `ลบประวัติขยะแลกแต้ม ${entry.wasteType.name} ${entry.pointsAwarded} คะแนน`,
+  });
+
+  revalidatePath("/recycle/history");
+  revalidatePath("/dashboard");
+}
+
 export async function recordWasteScoreAction(
   _prev: FormState,
   formData: FormData,
