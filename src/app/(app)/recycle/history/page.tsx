@@ -170,7 +170,7 @@ export default async function RecycleHistoryPage() {
                   {e.pointsAwarded}
                 </td>
                 <td className="px-4 py-3 text-slate-500">
-                  {e.recordedBy.fullName}
+                  {e.recordedBy?.fullName ?? "—"}
                 </td>
               </tr>
             ))}

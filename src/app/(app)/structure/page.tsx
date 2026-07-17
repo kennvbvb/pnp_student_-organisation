@@ -40,11 +40,11 @@ function buildTree(
 function PositionCard({ node }: { node: PositionNode }) {
   return (
     <div className="flex flex-col items-center">
-      <div className="min-w-[10rem] rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-center shadow-sm">
-        <p className="text-sm font-semibold text-emerald-800">
+      <div className="min-w-[10rem] rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-center shadow-sm">
+        <p className="text-sm font-semibold text-blue-900">
           {node.title}
         </p>
-        <p className="text-xs text-emerald-600">
+        <p className="text-xs text-blue-700">
           {node.holderName ?? "ยังไม่กำหนดผู้ดำรงตำแหน่ง"}
         </p>
       </div>
@@ -77,7 +77,7 @@ export default async function StructurePage() {
           canManage ? (
             <Link
               href="/structure/manage"
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800"
             >
               จัดการโครงสร้าง
             </Link>

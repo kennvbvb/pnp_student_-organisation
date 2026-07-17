@@ -170,7 +170,7 @@ function CreateUserForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+          className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-60"
         >
           {pending ? "กำลังสร้าง..." : "สร้างผู้ใช้"}
         </button>
@@ -287,7 +287,7 @@ function EditUserForm({
             <button
               type="submit"
               disabled={pending}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+              className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-60"
             >
               บันทึก
             </button>
@@ -332,7 +332,7 @@ export default function UserManager({
           <button
             type="button"
             onClick={() => setShowAdd(true)}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+            className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800"
           >
             + สร้างผู้ใช้ใหม่
           </button>
@@ -389,7 +389,7 @@ export default function UserManager({
                       <button
                         type="button"
                         onClick={() => setEditingId(u.id)}
-                        className="mr-3 text-emerald-600 hover:underline"
+                        className="mr-3 text-blue-800 hover:underline"
                       >
                         แก้ไข
                       </button>

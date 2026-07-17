@@ -1,6 +1,8 @@
 import { requirePermission } from "@/lib/auth-guard";
+import { hasPermission } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import PageHeader from "@/components/PageHeader";
+import DeleteConductButton from "@/components/conduct/DeleteConductButton";
 
 function formatDateTime(date: Date) {
   return new Intl.DateTimeFormat("th-TH", {
@@ -14,10 +16,11 @@ export default async function ConductHistoryPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  await requirePermission("VIEW_CONDUCT_HISTORY");
+  const user = await requirePermission("VIEW_CONDUCT_HISTORY");
+  const canDelete = hasPermission(user, "DELETE_CONDUCT_HISTORY");
   const { q = "" } = await searchParams;
 
-  const deductions = await prisma.conductDeduction.findMany({
+  const entries = await prisma.conductDeduction.findMany({
     where: q
       ? {
           student: {
@@ -47,8 +50,8 @@ export default async function ConductHistoryPage({
   return (
     <div>
       <PageHeader
-        title="ประวัติการลดคะแนนความประพฤติ"
-        description="รายการบันทึกการลดคะแนนความประพฤติของนักเรียนทั้งหมด"
+        title="ประวัติคะแนนความประพฤติ"
+        description="รายการบันทึกการเพิ่มและลดคะแนนความประพฤติของนักเรียน"
       />
 
       <form className="mb-4 flex gap-3" method="get">
@@ -57,58 +60,86 @@ export default async function ConductHistoryPage({
           name="q"
           defaultValue={q}
           placeholder="ค้นหารหัสนักเรียน หรือชื่อ"
-          className="w-80 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-80 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-800/20"
         />
         <button
           type="submit"
-          className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+          className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
         >
           ค้นหา
         </button>
       </form>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
             <tr>
               <th className="px-4 py-3">วันที่</th>
               <th className="px-4 py-3">นักเรียน</th>
               <th className="px-4 py-3">ห้อง</th>
-              <th className="px-4 py-3">คะแนนที่ลด</th>
-              <th className="px-4 py-3">หมวดหมู่</th>
+              <th className="px-4 py-3">ประเภท</th>
+              <th className="px-4 py-3">คะแนน</th>
               <th className="px-4 py-3">เหตุผล</th>
               <th className="px-4 py-3">ผู้บันทึก</th>
+              {canDelete && <th className="px-4 py-3 text-right">จัดการ</th>}
             </tr>
           </thead>
           <tbody>
-            {deductions.map((d) => (
-              <tr key={d.id} className="border-b border-slate-100 last:border-0">
-                <td className="px-4 py-3 whitespace-nowrap text-slate-500">
-                  {formatDateTime(d.createdAt)}
-                </td>
-                <td className="px-4 py-3 font-medium text-slate-800">
-                  {d.student.studentCode} {d.student.firstName}{" "}
-                  {d.student.lastName}
-                </td>
-                <td className="px-4 py-3 text-slate-500">
-                  {d.student.classRoom}
-                </td>
-                <td className="px-4 py-3 font-semibold text-red-600">
-                  -{d.amount}
-                </td>
-                <td className="px-4 py-3 text-slate-500">
-                  {d.category ?? "-"}
-                </td>
-                <td className="px-4 py-3 text-slate-600">{d.reason}</td>
-                <td className="px-4 py-3 text-slate-500">
-                  {d.recordedBy.fullName}
-                </td>
-              </tr>
-            ))}
-            {deductions.length === 0 && (
+            {entries.map((d) => {
+              const isAdd = d.type === "ADD";
+              return (
+                <tr key={d.id} className="border-b border-slate-100 last:border-0">
+                  <td className="px-4 py-3 whitespace-nowrap text-slate-500">
+                    {formatDateTime(d.createdAt)}
+                  </td>
+                  <td className="px-4 py-3 font-medium text-slate-800">
+                    {d.student.studentCode} {d.student.firstName}{" "}
+                    {d.student.lastName}
+                  </td>
+                  <td className="px-4 py-3 text-slate-500">
+                    {d.student.classRoom}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs ${
+                        isAdd
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-red-50 text-red-600"
+                      }`}
+                    >
+                      {isAdd ? "เพิ่ม" : "ลด"}
+                    </span>
+                  </td>
+                  <td
+                    className={`px-4 py-3 font-semibold ${
+                      isAdd ? "text-emerald-600" : "text-red-600"
+                    }`}
+                  >
+                    {isAdd ? "+" : "-"}
+                    {d.amount}
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">{d.reason}</td>
+                  <td className="px-4 py-3 text-slate-500">
+                    {d.recordedBy?.fullName ?? "—"}
+                  </td>
+                  {canDelete && (
+                    <td className="px-4 py-3 text-right">
+                      <DeleteConductButton
+                        id={d.id}
+                        label={`${d.student.firstName} ${d.student.lastName}`}
+                      />
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+            {entries.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
-                  ยังไม่มีประวัติการลดคะแนน
+                <td
+                  colSpan={canDelete ? 8 : 7}
+                  className="px-4 py-6 text-center text-slate-400"
+                >
+                  ยังไม่มีประวัติ
                 </td>
               </tr>
             )}

@@ -64,7 +64,7 @@ export default function ImportForm() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+          className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-60"
         >
           {pending ? "กำลังนำเข้า..." : "นำเข้าข้อมูล"}
         </button>

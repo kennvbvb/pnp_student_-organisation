@@ -44,7 +44,7 @@ function AddStudentForm({ onDone }: { onDone: () => void }) {
         <input
           name="studentCode"
           required
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div>
@@ -53,7 +53,7 @@ function AddStudentForm({ onDone }: { onDone: () => void }) {
         </label>
         <input
           name="prefix"
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div>
@@ -63,7 +63,7 @@ function AddStudentForm({ onDone }: { onDone: () => void }) {
         <input
           name="firstName"
           required
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div>
@@ -73,7 +73,7 @@ function AddStudentForm({ onDone }: { onDone: () => void }) {
         <input
           name="lastName"
           required
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div>
@@ -84,14 +84,14 @@ function AddStudentForm({ onDone }: { onDone: () => void }) {
           name="classRoom"
           required
           placeholder="เช่น ม.1/1"
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div className="flex items-end">
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+          className="w-full rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-60"
         >
           {pending ? "กำลังบันทึก..." : "เพิ่มนักเรียน"}
         </button>
@@ -185,7 +185,7 @@ function EditStudentForm({
             <button
               type="submit"
               disabled={pending}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+              className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-60"
             >
               บันทึก
             </button>
@@ -228,7 +228,7 @@ export default function StudentManager({
             <button
               type="button"
               onClick={() => setShowAdd(true)}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800"
             >
               + เพิ่มนักเรียน
             </button>
@@ -285,7 +285,7 @@ export default function StudentManager({
                       <button
                         type="button"
                         onClick={() => setEditingId(s.id)}
-                        className="mr-3 text-emerald-600 hover:underline"
+                        className="mr-3 text-blue-800 hover:underline"
                       >
                         แก้ไข
                       </button>
