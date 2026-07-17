@@ -90,11 +90,20 @@ function initials(name: string) {
   return (parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "");
 }
 
-function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+function NavLink({
+  item,
+  active,
+  onNavigate,
+}: {
+  item: NavItem;
+  active: boolean;
+  onNavigate?: () => void;
+}) {
   const Icon = item.icon;
   return (
     <Link
       href={item.href}
+      onClick={onNavigate}
       className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
         active
           ? "bg-blue-50 text-blue-900"
@@ -116,14 +125,20 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   );
 }
 
-export default function Sidebar({ user }: { user: CurrentUser }) {
+export default function Sidebar({
+  user,
+  onNavigate,
+}: {
+  user: CurrentUser;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
   const visibleAdminItems = ADMIN_NAV_ITEMS.filter((item) =>
     hasAccess(user, item),
   );
 
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white/80 backdrop-blur">
+    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-slate-200 bg-white/95 backdrop-blur">
       <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-5">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-800 to-indigo-900 text-lg font-bold text-white shadow-sm shadow-blue-900/30">
           สภ
@@ -144,7 +159,14 @@ export default function Sidebar({ user }: { user: CurrentUser }) {
           const active =
             pathname === item.href ||
             (item.href !== "/dashboard" && pathname.startsWith(item.href));
-          return <NavLink key={item.href} item={item} active={active} />;
+          return (
+            <NavLink
+              key={item.href}
+              item={item}
+              active={active}
+              onNavigate={onNavigate}
+            />
+          );
         })}
 
         {visibleAdminItems.length > 0 && (
@@ -157,6 +179,7 @@ export default function Sidebar({ user }: { user: CurrentUser }) {
                 key={item.href}
                 item={item}
                 active={pathname.startsWith(item.href)}
+                onNavigate={onNavigate}
               />
             ))}
           </>
