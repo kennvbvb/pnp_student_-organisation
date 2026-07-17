@@ -52,3 +52,10 @@ body {
 .animate-fade-in-up {
   animation: fade-in-up 0.35s ease-out both;
 }
+
+/* Subtle press feedback for primary action buttons (submit buttons that
+   aren't disabled). Keeps interactions feeling responsive. */
+button[type="submit"]:not(:disabled):active {
+  transform: scale(0.985);
+}
+

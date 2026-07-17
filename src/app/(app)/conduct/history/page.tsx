@@ -2,6 +2,7 @@ import { requirePermission } from "@/lib/auth-guard";
 import { hasPermission } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
 import DeleteConductButton from "@/components/conduct/DeleteConductButton";
 
 function formatDateTime(date: Date) {
@@ -137,9 +138,12 @@ export default async function ConductHistoryPage({
               <tr>
                 <td
                   colSpan={canDelete ? 8 : 7}
-                  className="px-4 py-6 text-center text-slate-400"
+                  className="px-4 py-2"
                 >
-                  ยังไม่มีประวัติ
+                  <EmptyState
+                    title="ยังไม่มีประวัติคะแนนความประพฤติ"
+                    description="เมื่อมีการเพิ่มหรือลดคะแนน รายการจะแสดงที่นี่"
+                  />
                 </td>
               </tr>
             )}

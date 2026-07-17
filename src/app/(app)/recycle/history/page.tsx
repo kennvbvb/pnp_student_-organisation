@@ -3,6 +3,7 @@ import { hasPermission } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
+import EmptyState from "@/components/EmptyState";
 import DeleteWasteButton from "@/components/recycle/DeleteWasteButton";
 
 function formatDateTime(date: Date) {
@@ -188,11 +189,11 @@ export default async function RecycleHistoryPage() {
             ))}
             {entries.length === 0 && (
               <tr>
-                <td
-                  colSpan={canDelete ? 7 : 6}
-                  className="px-4 py-6 text-center text-slate-400"
-                >
-                  ยังไม่มีประวัติการบันทึกคะแนน
+                <td colSpan={canDelete ? 7 : 6} className="px-4 py-2">
+                  <EmptyState
+                    title="ยังไม่มีประวัติการบันทึกคะแนน"
+                    description="เริ่มบันทึกคะแนนได้ที่หน้า “ขยะแลกแต้ม”"
+                  />
                 </td>
               </tr>
             )}
