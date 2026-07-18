@@ -4,33 +4,43 @@ import { hasPermission } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import PageHeader from "@/components/PageHeader";
 import StudentManager from "@/components/students/StudentManager";
+import Pagination, { parsePage } from "@/components/Pagination";
+
+const PAGE_SIZE = 25;
 
 export default async function StudentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; classRoom?: string }>;
+  searchParams: Promise<{ q?: string; classRoom?: string; page?: string }>;
 }) {
   const user = await requireUser();
   const canManage = hasPermission(user, "MANAGE_STUDENTS");
-  const { q = "", classRoom = "" } = await searchParams;
+  const { q = "", classRoom = "", page: pageParam } = await searchParams;
+
+  const where = {
+    AND: [
+      classRoom ? { classRoom } : {},
+      q
+        ? {
+            OR: [
+              { studentCode: { contains: q } },
+              { firstName: { contains: q } },
+              { lastName: { contains: q } },
+            ],
+          }
+        : {},
+    ],
+  };
+
+  const total = await prisma.student.count({ where });
+  const page = parsePage(pageParam, Math.ceil(total / PAGE_SIZE));
 
   const [students, classRooms] = await Promise.all([
     prisma.student.findMany({
-      where: {
-        AND: [
-          classRoom ? { classRoom } : {},
-          q
-            ? {
-                OR: [
-                  { studentCode: { contains: q } },
-                  { firstName: { contains: q } },
-                  { lastName: { contains: q } },
-                ],
-              }
-            : {},
-        ],
-      },
+      where,
       orderBy: [{ classRoom: "asc" }, { studentCode: "asc" }],
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       select: {
         id: true,
         studentCode: true,
@@ -71,12 +81,14 @@ export default async function StudentsPage({
           type="text"
           name="q"
           defaultValue={q}
+          aria-label="ค้นหาชื่อ หรือรหัสนักเรียน"
           placeholder="ค้นหาชื่อ หรือรหัสนักเรียน"
           className="w-64 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
         <select
           name="classRoom"
           defaultValue={classRoom}
+          aria-label="กรองตามห้อง"
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         >
           <option value="">ทุกห้อง</option>
@@ -95,6 +107,13 @@ export default async function StudentsPage({
       </form>
 
       <StudentManager students={students} canManage={canManage} />
+
+      <Pagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        params={{ q, classRoom }}
+      />
     </div>
   );
 }

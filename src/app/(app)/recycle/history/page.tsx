@@ -4,7 +4,10 @@ import { prisma } from "@/lib/prisma";
 import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
+import Pagination, { parsePage } from "@/components/Pagination";
 import DeleteWasteButton from "@/components/recycle/DeleteWasteButton";
+
+const PAGE_SIZE = 25;
 
 function formatDateTime(date: Date) {
   return new Intl.DateTimeFormat("th-TH", {
@@ -13,13 +16,22 @@ function formatDateTime(date: Date) {
   }).format(date);
 }
 
-export default async function RecycleHistoryPage() {
+export default async function RecycleHistoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const user = await requireUser();
   const canDelete = hasPermission(user, "DELETE_RECYCLE_HISTORY");
+  const { page: pageParam } = await searchParams;
+
+  const entriesTotal = await prisma.wasteScoreEntry.count();
+  const page = parsePage(pageParam, Math.ceil(entriesTotal / PAGE_SIZE));
 
   const entries = await prisma.wasteScoreEntry.findMany({
     orderBy: { createdAt: "desc" },
-    take: 200,
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
     include: {
       wasteType: { select: { name: true, unit: true } },
       student: {
@@ -200,6 +212,8 @@ export default async function RecycleHistoryPage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} pageSize={PAGE_SIZE} total={entriesTotal} />
     </div>
   );
 }

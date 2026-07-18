@@ -3,7 +3,10 @@ import { hasPermission } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
+import Pagination, { parsePage } from "@/components/Pagination";
 import DeleteConductButton from "@/components/conduct/DeleteConductButton";
+
+const PAGE_SIZE = 25;
 
 function formatDateTime(date: Date) {
   return new Intl.DateTimeFormat("th-TH", {
@@ -15,26 +18,32 @@ function formatDateTime(date: Date) {
 export default async function ConductHistoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string }>;
 }) {
   const user = await requirePermission("VIEW_CONDUCT_HISTORY");
   const canDelete = hasPermission(user, "DELETE_CONDUCT_HISTORY");
-  const { q = "" } = await searchParams;
+  const { q = "", page: pageParam } = await searchParams;
+
+  const where = q
+    ? {
+        student: {
+          OR: [
+            { studentCode: { contains: q } },
+            { firstName: { contains: q } },
+            { lastName: { contains: q } },
+          ],
+        },
+      }
+    : undefined;
+
+  const total = await prisma.conductDeduction.count({ where });
+  const page = parsePage(pageParam, Math.ceil(total / PAGE_SIZE));
 
   const entries = await prisma.conductDeduction.findMany({
-    where: q
-      ? {
-          student: {
-            OR: [
-              { studentCode: { contains: q } },
-              { firstName: { contains: q } },
-              { lastName: { contains: q } },
-            ],
-          },
-        }
-      : undefined,
+    where,
     orderBy: { createdAt: "desc" },
-    take: 200,
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
     include: {
       student: {
         select: {
@@ -60,6 +69,7 @@ export default async function ConductHistoryPage({
           type="text"
           name="q"
           defaultValue={q}
+          aria-label="ค้นหารหัสนักเรียน หรือชื่อ"
           placeholder="ค้นหารหัสนักเรียน หรือชื่อ"
           className="w-80 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-800/20"
         />
@@ -150,6 +160,8 @@ export default async function ConductHistoryPage({
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} pageSize={PAGE_SIZE} total={total} params={{ q }} />
     </div>
   );
 }
