@@ -7,6 +7,7 @@ import {
   deleteStudentAction,
   type FormState,
 } from "@/actions/students";
+import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
 export type StudentRow = {
   id: string;
@@ -38,49 +39,69 @@ function AddStudentForm({ onDone }: { onDone: () => void }) {
       className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-6"
     >
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="sa-code"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           รหัสนักเรียน
         </label>
         <input
+          id="sa-code"
           name="studentCode"
           required
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="sa-prefix"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           คำนำหน้า
         </label>
         <input
+          id="sa-prefix"
           name="prefix"
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="sa-firstname"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           ชื่อ
         </label>
         <input
+          id="sa-firstname"
           name="firstName"
           required
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="sa-lastname"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           นามสกุล
         </label>
         <input
+          id="sa-lastname"
           name="lastName"
           required
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="sa-classroom"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           ห้อง
         </label>
         <input
+          id="sa-classroom"
           name="classRoom"
           required
           placeholder="เช่น ม.1/1"
@@ -97,7 +118,9 @@ function AddStudentForm({ onDone }: { onDone: () => void }) {
         </button>
       </div>
       {state.error && (
-        <p className="text-sm text-red-600 lg:col-span-6">{state.error}</p>
+        <p role="alert" className="text-sm text-red-600 lg:col-span-6">
+          {state.error}
+        </p>
       )}
     </form>
   );
@@ -129,20 +152,28 @@ function EditStudentForm({
         >
           <input type="hidden" name="id" value={student.id} />
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
+            <label
+              htmlFor="se-prefix"
+              className="mb-1 block text-xs font-medium text-slate-600"
+            >
               คำนำหน้า
             </label>
             <input
+              id="se-prefix"
               name="prefix"
               defaultValue={student.prefix ?? ""}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
+            <label
+              htmlFor="se-firstname"
+              className="mb-1 block text-xs font-medium text-slate-600"
+            >
               ชื่อ
             </label>
             <input
+              id="se-firstname"
               name="firstName"
               required
               defaultValue={student.firstName}
@@ -150,10 +181,14 @@ function EditStudentForm({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
+            <label
+              htmlFor="se-lastname"
+              className="mb-1 block text-xs font-medium text-slate-600"
+            >
               นามสกุล
             </label>
             <input
+              id="se-lastname"
               name="lastName"
               required
               defaultValue={student.lastName}
@@ -161,10 +196,14 @@ function EditStudentForm({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
+            <label
+              htmlFor="se-classroom"
+              className="mb-1 block text-xs font-medium text-slate-600"
+            >
               ห้อง
             </label>
             <input
+              id="se-classroom"
               name="classRoom"
               required
               defaultValue={student.classRoom}
@@ -198,7 +237,7 @@ function EditStudentForm({
             </button>
           </div>
           {state.error && (
-            <p className="text-sm text-red-600 lg:col-span-6">
+            <p role="alert" className="text-sm text-red-600 lg:col-span-6">
               {state.error}
             </p>
           )}
@@ -291,21 +330,12 @@ export default function StudentManager({
                       </button>
                       <form action={deleteStudentAction} className="inline">
                         <input type="hidden" name="id" value={s.id} />
-                        <button
-                          type="submit"
+                        <ConfirmSubmitButton
+                          message={`ต้องการลบนักเรียน "${s.firstName} ${s.lastName}" ใช่หรือไม่?`}
                           className="text-red-600 hover:underline"
-                          onClick={(e) => {
-                            if (
-                              !confirm(
-                                `ต้องการลบนักเรียน "${s.firstName} ${s.lastName}" ใช่หรือไม่?`,
-                              )
-                            ) {
-                              e.preventDefault();
-                            }
-                          }}
                         >
                           ลบ
-                        </button>
+                        </ConfirmSubmitButton>
                       </form>
                     </td>
                   )}

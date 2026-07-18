@@ -1,6 +1,7 @@
 "use client";
 
 import { deleteWasteEntryAction } from "@/actions/recycle";
+import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
 export default function DeleteWasteButton({
   id,
@@ -12,17 +13,12 @@ export default function DeleteWasteButton({
   return (
     <form action={deleteWasteEntryAction} className="inline">
       <input type="hidden" name="id" value={id} />
-      <button
-        type="submit"
+      <ConfirmSubmitButton
+        message={`ต้องการลบประวัติ "${label}" ใช่หรือไม่?`}
         className="text-red-600 hover:underline"
-        onClick={(e) => {
-          if (!confirm(`ต้องการลบประวัติ "${label}" ใช่หรือไม่?`)) {
-            e.preventDefault();
-          }
-        }}
       >
         ลบ
-      </button>
+      </ConfirmSubmitButton>
     </form>
   );
 }

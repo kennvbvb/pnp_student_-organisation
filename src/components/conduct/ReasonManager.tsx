@@ -6,6 +6,7 @@ import {
   deleteConductReasonAction,
   type FormState,
 } from "@/actions/conduct";
+import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
 type Reason = { id: string; text: string; type: "ADD" | "DEDUCT" };
 
@@ -25,10 +26,14 @@ function AddReasonForm({ onDone }: { onDone: () => void }) {
   return (
     <form action={formAction} className="flex flex-wrap items-end gap-2">
       <div className="flex-1">
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="rm-text"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           เหตุผลใหม่
         </label>
         <input
+          id="rm-text"
           name="text"
           required
           placeholder="เช่น ไม่ทำเวร"
@@ -36,10 +41,14 @@ function AddReasonForm({ onDone }: { onDone: () => void }) {
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="rm-type"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           ประเภท
         </label>
         <select
+          id="rm-type"
           name="type"
           defaultValue="DEDUCT"
           className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
@@ -56,7 +65,9 @@ function AddReasonForm({ onDone }: { onDone: () => void }) {
         เพิ่ม
       </button>
       {state.error && (
-        <p className="w-full text-sm text-red-600">{state.error}</p>
+        <p role="alert" className="w-full text-sm text-red-600">
+          {state.error}
+        </p>
       )}
     </form>
   );
@@ -99,16 +110,13 @@ export default function ReasonManager({ reasons }: { reasons: Reason[] }) {
             {r.text}
             <form action={deleteConductReasonAction} className="inline">
               <input type="hidden" name="id" value={r.id} />
-              <button
-                type="submit"
+              <ConfirmSubmitButton
+                message={`ลบเหตุผล "${r.text}" ใช่หรือไม่?`}
+                ariaLabel={`ลบเหตุผล ${r.text}`}
                 className="text-slate-400 hover:text-red-600"
-                title="ลบเหตุผล"
-                onClick={(e) => {
-                  if (!confirm(`ลบเหตุผล "${r.text}" ?`)) e.preventDefault();
-                }}
               >
                 ✕
-              </button>
+              </ConfirmSubmitButton>
             </form>
           </span>
         ))}

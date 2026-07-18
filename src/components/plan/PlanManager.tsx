@@ -6,6 +6,7 @@ import {
   deleteActivityAction,
   type FormState,
 } from "@/actions/plan";
+import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
 export type Activity = {
   id: string;
@@ -57,20 +58,28 @@ function AddActivityForm({ onDone }: { onDone: () => void }) {
       className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-5"
     >
       <div className="lg:col-span-2">
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="pl-title"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           ชื่อกิจกรรม
         </label>
         <input
+          id="pl-title"
           name="title"
           required
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="pl-startdate"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           วันที่เริ่ม
         </label>
         <input
+          id="pl-startdate"
           type="date"
           name="startDate"
           required
@@ -78,20 +87,28 @@ function AddActivityForm({ onDone }: { onDone: () => void }) {
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="pl-enddate"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           วันที่สิ้นสุด (ถ้ามี)
         </label>
         <input
+          id="pl-enddate"
           type="date"
           name="endDate"
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="pl-description"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           รายละเอียด
         </label>
         <input
+          id="pl-description"
           name="description"
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
@@ -105,7 +122,9 @@ function AddActivityForm({ onDone }: { onDone: () => void }) {
           {pending ? "กำลังบันทึก..." : "เพิ่มกิจกรรม"}
         </button>
         {state.error && (
-          <p className="ml-3 text-sm text-red-600">{state.error}</p>
+          <p role="alert" className="ml-3 text-sm text-red-600">
+            {state.error}
+          </p>
         )}
       </div>
     </form>
@@ -199,19 +218,12 @@ export default function PlanManager({
                         {canManage && (
                           <form action={deleteActivityAction}>
                             <input type="hidden" name="id" value={a.id} />
-                            <button
-                              type="submit"
+                            <ConfirmSubmitButton
+                              message={`ลบกิจกรรม "${a.title}" ใช่หรือไม่?`}
                               className="shrink-0 text-xs text-red-600 hover:underline"
-                              onClick={(e) => {
-                                if (
-                                  !confirm(`ลบกิจกรรม "${a.title}" ใช่หรือไม่?`)
-                                ) {
-                                  e.preventDefault();
-                                }
-                              }}
                             >
                               ลบ
-                            </button>
+                            </ConfirmSubmitButton>
                           </form>
                         )}
                       </li>

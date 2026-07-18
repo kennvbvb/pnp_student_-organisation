@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireUser } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { classifyLevel } from "@/lib/level";
@@ -14,6 +15,8 @@ import {
 
 const UPCOMING_WINDOW_DAYS = 7;
 const NOTIFY_WINDOW_DAYS = 7;
+// Keep dashboard lists short — full data lives on the dedicated pages.
+const PRIMARY_PREVIEW_ROWS = 5;
 
 function formatThaiDate(date: Date) {
   return new Intl.DateTimeFormat("th-TH", {
@@ -131,6 +134,7 @@ export default async function DashboardPage() {
   const primaryStudents = students.filter(
     (s) => classifyLevel(s.classRoom) === "primary",
   );
+  const primaryPreview = primaryStudents.slice(0, PRIMARY_PREVIEW_ROWS);
   for (const s of students) {
     if (classifyLevel(s.classRoom) !== "kindergarten") continue;
     const cur = kinderRooms.get(s.classRoom) ?? { conductTotal: 0, count: 0 };
@@ -182,9 +186,17 @@ export default async function DashboardPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="mb-3 text-sm font-semibold text-slate-700">
-                คะแนนความประพฤติล่าสุด ({NOTIFY_WINDOW_DAYS} วัน)
-              </p>
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm font-semibold text-slate-700">
+                  คะแนนความประพฤติล่าสุด ({NOTIFY_WINDOW_DAYS} วัน)
+                </p>
+                <Link
+                  href="/conduct/history"
+                  className="text-xs font-medium text-blue-800 hover:underline"
+                >
+                  ดูทั้งหมด →
+                </Link>
+              </div>
               {recentConduct.length === 0 ? (
                 <p className="text-sm text-slate-400">ไม่มีรายการ</p>
               ) : (
@@ -218,9 +230,17 @@ export default async function DashboardPage() {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="mb-3 text-sm font-semibold text-slate-700">
-                กิจกรรมขยะแลกแต้มล่าสุด ({NOTIFY_WINDOW_DAYS} วัน)
-              </p>
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm font-semibold text-slate-700">
+                  กิจกรรมขยะแลกแต้มล่าสุด ({NOTIFY_WINDOW_DAYS} วัน)
+                </p>
+                <Link
+                  href="/recycle/history"
+                  className="text-xs font-medium text-blue-800 hover:underline"
+                >
+                  ดูทั้งหมด →
+                </Link>
+              </div>
               {recentRecycle.length === 0 ? (
                 <p className="text-sm text-slate-400">ไม่มีรายการ</p>
               ) : (
@@ -330,11 +350,19 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Feature 6: primary per individual */}
+      {/* Feature 6: primary per individual (preview of first rows) */}
       <div>
-        <h2 className="mb-3 text-base font-bold text-slate-800">
-          ระดับประถมศึกษา — คะแนนรายบุคคล
-        </h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-bold text-slate-800">
+            ระดับประถมศึกษา — คะแนนรายบุคคล
+          </h2>
+          <Link
+            href="/students"
+            className="text-sm font-medium text-blue-800 hover:underline"
+          >
+            ดูทั้งหมด →
+          </Link>
+        </div>
         <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
@@ -347,7 +375,7 @@ export default async function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {primaryStudents.map((s) => (
+              {primaryPreview.map((s) => (
                 <tr key={s.id} className="border-b border-slate-100 last:border-0">
                   <td className="px-4 py-3 text-slate-500">{s.studentCode}</td>
                   <td className="px-4 py-3 font-medium text-slate-800">
@@ -374,6 +402,16 @@ export default async function DashboardPage() {
               )}
             </tbody>
           </table>
+          {primaryStudents.length > PRIMARY_PREVIEW_ROWS && (
+            <div className="border-t border-slate-100 px-4 py-3 text-center">
+              <Link
+                href="/students"
+                className="text-sm font-medium text-blue-800 hover:underline"
+              >
+                ดูทั้งหมด {primaryStudents.length} คน →
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>

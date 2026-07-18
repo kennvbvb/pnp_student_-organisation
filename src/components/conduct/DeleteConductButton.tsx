@@ -1,6 +1,7 @@
 "use client";
 
 import { deleteConductEntryAction } from "@/actions/conduct";
+import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
 export default function DeleteConductButton({
   id,
@@ -12,21 +13,13 @@ export default function DeleteConductButton({
   return (
     <form action={deleteConductEntryAction} className="inline">
       <input type="hidden" name="id" value={id} />
-      <button
-        type="submit"
+      <ConfirmSubmitButton
+        message={`ต้องการลบประวัติของ "${label}" ใช่หรือไม่?`}
+        detail="คะแนนของนักเรียนจะถูกปรับกลับคืน"
         className="text-red-600 hover:underline"
-        onClick={(e) => {
-          if (
-            !confirm(
-              `ต้องการลบประวัติของ "${label}" ใช่หรือไม่?\nคะแนนของนักเรียนจะถูกปรับกลับคืน`,
-            )
-          ) {
-            e.preventDefault();
-          }
-        }}
       >
         ลบ
-      </button>
+      </ConfirmSubmitButton>
     </form>
   );
 }
