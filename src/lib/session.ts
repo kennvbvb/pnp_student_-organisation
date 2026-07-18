@@ -58,6 +58,7 @@ export type CurrentUser = {
   fullName: string;
   role: "ADMIN" | "PRESIDENT" | "VICE_PRESIDENT" | "DEPT_HEAD" | "MEMBER";
   active: boolean;
+  mustChangePassword: boolean;
   permissions: Permission[];
 };
 
@@ -82,6 +83,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     fullName: user.fullName,
     role: user.role,
     active: user.active,
+    mustChangePassword: user.mustChangePassword,
     permissions: user.permissions.map((p) => p.permission) as Permission[],
   };
 }

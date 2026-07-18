@@ -1,5 +1,6 @@
 import { getCurrentUser, hasPermission } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 import { xlsxResponse, formatThaiDateTime } from "@/lib/xlsx";
 
 export async function GET(request: Request) {
@@ -21,12 +22,22 @@ export async function GET(request: Request) {
       where: { id: studentId },
       include: {
         conductDeductions: {
+          where: { cancelledAt: null },
           orderBy: { createdAt: "desc" },
           include: { recordedBy: { select: { fullName: true } } },
         },
       },
     });
     if (!student) return new Response("Not found", { status: 404 });
+
+    // Personal data leaves the system — record who exported what.
+    await logAudit({
+      userId: user.id,
+      action: "EXPORT",
+      entityType: "ConductDeduction",
+      entityId: student.id,
+      detail: `ส่งออกประวัติคะแนนความประพฤติรายบุคคล: ${student.studentCode} ${student.firstName} ${student.lastName}`,
+    });
 
     const summary: (string | number | null)[][] = [
       ["รหัสนักเรียน", student.studentCode],
@@ -80,6 +91,16 @@ export async function GET(request: Request) {
     scope === "room" && classRoom
       ? `conduct_room_${classRoom}.xlsx`
       : "conduct_all.xlsx";
+
+  await logAudit({
+    userId: user.id,
+    action: "EXPORT",
+    entityType: "Student",
+    detail:
+      scope === "room" && classRoom
+        ? `ส่งออกคะแนนความประพฤติรายห้อง: ${classRoom} (${students.length} คน)`
+        : `ส่งออกคะแนนความประพฤติทั้งหมด (${students.length} คน)`,
+  });
 
   return xlsxResponse(
     [{ name: "คะแนนความประพฤติ", rows, cols: [14, 10, 16, 16, 10, 14] }],

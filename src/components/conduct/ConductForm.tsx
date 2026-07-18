@@ -162,6 +162,7 @@ export default function ConductForm({
             type="number"
             name="amount"
             min={1}
+            max={50}
             required
             className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-800/20"
           />

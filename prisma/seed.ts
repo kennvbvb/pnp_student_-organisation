@@ -18,6 +18,8 @@ async function main() {
         passwordHash,
         fullName: "ผู้ดูแลระบบ",
         role: "ADMIN",
+        // Seeded credentials are well-known — force a change on first login.
+        mustChangePassword: true,
         permissions: {
           create: ROLE_DEFAULT_PERMISSIONS.ADMIN.map((permission) => ({
             permission,

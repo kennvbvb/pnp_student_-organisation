@@ -63,17 +63,37 @@ export async function updateStudentAction(
     return { error: "กรุณากรอกข้อมูลให้ครบถ้วน" };
   }
 
+  const before = await prisma.student.findUnique({ where: { id } });
+  if (!before) {
+    return { error: "ไม่พบนักเรียนคนนี้ในระบบ" };
+  }
+
   await prisma.student.update({
     where: { id },
     data: { prefix, firstName, lastName, classRoom, active },
   });
+
+  // Record old → new values for every changed field.
+  const changes: string[] = [];
+  if ((before.prefix ?? "") !== (prefix ?? ""))
+    changes.push(`คำนำหน้า: "${before.prefix ?? "-"}" → "${prefix ?? "-"}"`);
+  if (before.firstName !== firstName)
+    changes.push(`ชื่อ: "${before.firstName}" → "${firstName}"`);
+  if (before.lastName !== lastName)
+    changes.push(`นามสกุล: "${before.lastName}" → "${lastName}"`);
+  if (before.classRoom !== classRoom)
+    changes.push(`ห้อง: "${before.classRoom}" → "${classRoom}"`);
+  if (before.active !== active)
+    changes.push(`สถานะ: ${before.active ? "ใช้งาน" : "ปิด"} → ${active ? "ใช้งาน" : "ปิด"}`);
 
   await logAudit({
     userId: user.id,
     action: "UPDATE",
     entityType: "Student",
     entityId: id,
-    detail: `${firstName} ${lastName}`,
+    detail: `${before.studentCode} ${firstName} ${lastName}${
+      changes.length > 0 ? ` | ${changes.join(", ")}` : " | ไม่มีการเปลี่ยนแปลง"
+    }`,
   });
 
   revalidatePath("/students");

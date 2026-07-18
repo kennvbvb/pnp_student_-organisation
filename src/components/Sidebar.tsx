@@ -200,6 +200,14 @@ export default function Sidebar({
             </p>
           </div>
         </div>
+        <Link
+          href="/account/password"
+          onClick={onNavigate}
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
+        >
+          <SettingsIcon className="h-4 w-4" />
+          เปลี่ยนรหัสผ่าน
+        </Link>
         <form action={logoutAction}>
           <button
             type="submit"

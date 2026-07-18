@@ -24,10 +24,10 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   MANAGE_STUDENTS: "จัดการรายชื่อนักเรียน",
   MANAGE_CONDUCT: "บันทึกคะแนนความประพฤติ",
   VIEW_CONDUCT_HISTORY: "ดูประวัติคะแนนความประพฤติ",
-  DELETE_CONDUCT_HISTORY: "ลบประวัติคะแนนความประพฤติ",
+  DELETE_CONDUCT_HISTORY: "ยกเลิกรายการคะแนนความประพฤติ",
   MANAGE_PLAN: "จัดการแผนงานประจำปี",
   MANAGE_RECYCLE: "บันทึกคะแนนกิจกรรมขยะแลกแต้ม",
-  DELETE_RECYCLE_HISTORY: "ลบประวัติคะแนนขยะแลกแต้ม",
+  DELETE_RECYCLE_HISTORY: "ยกเลิกรายการคะแนนขยะแลกแต้ม",
   EXPORT_DATA: "ส่งออกข้อมูล (Export)",
   MANAGE_SETTINGS: "จัดการตั้งค่าเว็บไซต์",
 };

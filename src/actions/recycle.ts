@@ -60,25 +60,38 @@ export async function deleteWasteTypeAction(formData: FormData) {
   revalidatePath("/recycle");
 }
 
-export async function deleteWasteEntryAction(formData: FormData) {
+/**
+ * Soft-cancel a waste score entry: the row is kept for auditability and
+ * marked cancelled with a required reason. Leaderboards and totals exclude
+ * cancelled entries.
+ */
+export async function cancelWasteEntryAction(formData: FormData) {
   const user = await requirePermission("DELETE_RECYCLE_HISTORY");
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
+  const cancelReason = String(formData.get("cancelReason") ?? "").trim();
+  if (!id || !cancelReason) return;
 
   const entry = await prisma.wasteScoreEntry.findUnique({
     where: { id },
     include: { wasteType: { select: { name: true } } },
   });
-  if (!entry) return;
+  if (!entry || entry.cancelledAt) return;
 
-  await prisma.wasteScoreEntry.delete({ where: { id } });
+  await prisma.wasteScoreEntry.update({
+    where: { id },
+    data: {
+      cancelledAt: new Date(),
+      cancelledByUserId: user.id,
+      cancelReason,
+    },
+  });
 
   await logAudit({
     userId: user.id,
-    action: "DELETE",
+    action: "CANCEL",
     entityType: "WasteScoreEntry",
     entityId: id,
-    detail: `ลบประวัติขยะแลกแต้ม ${entry.wasteType.name} ${entry.pointsAwarded} คะแนน`,
+    detail: `ยกเลิกรายการขยะแลกแต้ม ${entry.wasteType.name} ${entry.pointsAwarded} คะแนน เหตุผล: ${cancelReason}`,
   });
 
   revalidatePath("/recycle/history");
@@ -110,6 +123,9 @@ export async function recordWasteScoreAction(
   if (!wasteTypeId || !Number.isFinite(quantity) || quantity <= 0) {
     return { error: "กรุณาเลือกประเภทขยะและระบุจำนวนให้ถูกต้อง" };
   }
+  if (quantity > 10000) {
+    return { error: "จำนวนต่อรายการต้องไม่เกิน 10,000 กรุณาตรวจสอบอีกครั้ง" };
+  }
 
   const wasteType = await prisma.wasteType.findUnique({
     where: { id: wasteTypeId },
@@ -118,7 +134,9 @@ export async function recordWasteScoreAction(
     return { error: "ไม่พบประเภทขยะนี้" };
   }
 
-  const pointsAwarded = quantity * wasteType.pointsPerUnit;
+  // Round to 2 decimals to avoid floating-point artifacts in stored points.
+  const pointsAwarded =
+    Math.round(quantity * wasteType.pointsPerUnit * 100) / 100;
 
   await prisma.wasteScoreEntry.create({
     data: {
