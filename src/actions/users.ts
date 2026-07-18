@@ -67,6 +67,8 @@ export async function createUserAction(
       passwordHash,
       fullName,
       role,
+      // Initial passwords are set by an admin — force a change on first login.
+      mustChangePassword: true,
       permissions: {
         create: permissions.map((permission) => ({ permission })),
       },
@@ -135,7 +137,11 @@ export async function updateUserAction(
         role,
         active,
         ...(newPassword
-          ? { passwordHash: await bcrypt.hash(newPassword, 10) }
+          ? {
+              passwordHash: await bcrypt.hash(newPassword, 10),
+              // A password reset by someone else must be changed on next login.
+              ...(actor.id !== id ? { mustChangePassword: true } : {}),
+            }
           : {}),
       },
     });
@@ -145,12 +151,23 @@ export async function updateUserAction(
     });
   });
 
+  // Record old → new values for every changed field.
+  const changes: string[] = [];
+  if (target.fullName !== fullName)
+    changes.push(`ชื่อ: "${target.fullName}" → "${fullName}"`);
+  if (target.role !== role) changes.push(`บทบาท: ${target.role} → ${role}`);
+  if (target.active !== active)
+    changes.push(`สถานะ: ${target.active ? "ใช้งาน" : "ระงับ"} → ${active ? "ใช้งาน" : "ระงับ"}`);
+  if (newPassword) changes.push("ตั้งรหัสผ่านใหม่");
+
   await logAudit({
     userId: actor.id,
     action: "UPDATE",
     entityType: "User",
     entityId: id,
-    detail: `แก้ไขผู้ใช้ ${target.username}`,
+    detail: `แก้ไขผู้ใช้ ${target.username}${
+      changes.length > 0 ? ` | ${changes.join(", ")}` : ""
+    }`,
   });
 
   revalidatePath("/admin/users");

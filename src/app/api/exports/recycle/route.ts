@@ -1,5 +1,6 @@
 import { getCurrentUser, hasPermission } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 import { xlsxResponse, formatThaiDateTime } from "@/lib/xlsx";
 
 export async function GET(request: Request) {
@@ -21,11 +22,20 @@ export async function GET(request: Request) {
     if (!student) return new Response("Not found", { status: 404 });
 
     const entries = await prisma.wasteScoreEntry.findMany({
-      where: { targetType: "STUDENT", studentId },
+      where: { targetType: "STUDENT", studentId, cancelledAt: null },
       orderBy: { createdAt: "desc" },
       include: { wasteType: { select: { name: true, unit: true } } },
     });
     const total = entries.reduce((sum, e) => sum + e.pointsAwarded, 0);
+
+    // Personal data leaves the system — record who exported what.
+    await logAudit({
+      userId: user.id,
+      action: "EXPORT",
+      entityType: "WasteScoreEntry",
+      entityId: student.id,
+      detail: `ส่งออกคะแนนขยะแลกแต้มรายบุคคล: ${student.studentCode} ${student.firstName} ${student.lastName}`,
+    });
 
     const rows: (string | number | null)[][] = [
       ["วันที่", "ประเภทขยะ", "จำนวน", "หน่วย", "คะแนน", "หมายเหตุ"],
@@ -56,11 +66,18 @@ export async function GET(request: Request) {
   // scope: room
   if (!classRoom) return new Response("classRoom required", { status: 400 });
   const entries = await prisma.wasteScoreEntry.findMany({
-    where: { targetType: "ROOM", classRoom },
+    where: { targetType: "ROOM", classRoom, cancelledAt: null },
     orderBy: { createdAt: "desc" },
     include: { wasteType: { select: { name: true, unit: true } } },
   });
   const total = entries.reduce((sum, e) => sum + e.pointsAwarded, 0);
+
+  await logAudit({
+    userId: user.id,
+    action: "EXPORT",
+    entityType: "WasteScoreEntry",
+    detail: `ส่งออกคะแนนขยะแลกแต้มรายห้อง: ${classRoom} (${entries.length} รายการ)`,
+  });
 
   const rows: (string | number | null)[][] = [
     ["วันที่", "ประเภทขยะ", "จำนวน", "หน่วย", "คะแนน", "หมายเหตุ"],

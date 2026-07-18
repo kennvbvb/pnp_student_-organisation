@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
 import Pagination, { parsePage } from "@/components/Pagination";
-import DeleteConductButton from "@/components/conduct/DeleteConductButton";
+import CancelConductButton from "@/components/conduct/CancelConductButton";
 
 const PAGE_SIZE = 25;
 
@@ -54,6 +54,7 @@ export default async function ConductHistoryPage({
         },
       },
       recordedBy: { select: { fullName: true } },
+      cancelledBy: { select: { fullName: true } },
     },
   });
 
@@ -98,8 +99,14 @@ export default async function ConductHistoryPage({
           <tbody>
             {entries.map((d) => {
               const isAdd = d.type === "ADD";
+              const cancelled = d.cancelledAt !== null;
               return (
-                <tr key={d.id} className="border-b border-slate-100 last:border-0">
+                <tr
+                  key={d.id}
+                  className={`border-b border-slate-100 last:border-0 ${
+                    cancelled ? "opacity-60" : ""
+                  }`}
+                >
                   <td className="px-4 py-3 whitespace-nowrap text-slate-500">
                     {formatDateTime(d.createdAt)}
                   </td>
@@ -113,9 +120,11 @@ export default async function ConductHistoryPage({
                   <td className="px-4 py-3">
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs ${
-                        isAdd
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-red-50 text-red-600"
+                        cancelled
+                          ? "bg-slate-100 text-slate-500 line-through"
+                          : isAdd
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-red-50 text-red-600"
                       }`}
                     >
                       {isAdd ? "เพิ่ม" : "ลด"}
@@ -123,22 +132,41 @@ export default async function ConductHistoryPage({
                   </td>
                   <td
                     className={`px-4 py-3 font-semibold ${
-                      isAdd ? "text-emerald-600" : "text-red-600"
+                      cancelled
+                        ? "text-slate-400 line-through"
+                        : isAdd
+                          ? "text-emerald-600"
+                          : "text-red-600"
                     }`}
                   >
                     {isAdd ? "+" : "-"}
                     {d.amount}
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{d.reason}</td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {d.reason}
+                    {cancelled && (
+                      <span className="mt-0.5 block text-xs text-red-500">
+                        ยกเลิกแล้ว
+                        {d.cancelledBy ? ` โดย ${d.cancelledBy.fullName}` : ""}
+                        {d.cancelReason ? `: ${d.cancelReason}` : ""}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-slate-500">
                     {d.recordedBy?.fullName ?? "—"}
                   </td>
                   {canDelete && (
                     <td className="px-4 py-3 text-right">
-                      <DeleteConductButton
-                        id={d.id}
-                        label={`${d.student.firstName} ${d.student.lastName}`}
-                      />
+                      {cancelled ? (
+                        <span className="text-xs text-slate-400">
+                          ยกเลิกแล้ว
+                        </span>
+                      ) : (
+                        <CancelConductButton
+                          id={d.id}
+                          label={`${d.student.firstName} ${d.student.lastName}`}
+                        />
+                      )}
                     </td>
                   )}
                 </tr>

@@ -5,7 +5,7 @@ import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
 import Pagination, { parsePage } from "@/components/Pagination";
-import DeleteWasteButton from "@/components/recycle/DeleteWasteButton";
+import CancelWasteButton from "@/components/recycle/CancelWasteButton";
 
 const PAGE_SIZE = 25;
 
@@ -38,21 +38,26 @@ export default async function RecycleHistoryPage({
         select: { studentCode: true, firstName: true, lastName: true, classRoom: true },
       },
       recordedBy: { select: { fullName: true } },
+      cancelledBy: { select: { fullName: true } },
     },
   });
 
+  // Leaderboards and totals count only entries that are not cancelled.
   const [roomGroups, studentGroups, totalAgg] = await Promise.all([
     prisma.wasteScoreEntry.groupBy({
       by: ["classRoom"],
-      where: { targetType: "ROOM" },
+      where: { targetType: "ROOM", cancelledAt: null },
       _sum: { pointsAwarded: true },
     }),
     prisma.wasteScoreEntry.groupBy({
       by: ["studentId"],
-      where: { targetType: "STUDENT" },
+      where: { targetType: "STUDENT", cancelledAt: null },
       _sum: { pointsAwarded: true },
     }),
-    prisma.wasteScoreEntry.aggregate({ _sum: { pointsAwarded: true } }),
+    prisma.wasteScoreEntry.aggregate({
+      where: { cancelledAt: null },
+      _sum: { pointsAwarded: true },
+    }),
   ]);
 
   const topRooms = roomGroups
@@ -165,40 +170,67 @@ export default async function RecycleHistoryPage({
             </tr>
           </thead>
           <tbody>
-            {entries.map((e) => (
-              <tr key={e.id} className="border-b border-slate-100 last:border-0">
-                <td className="px-4 py-3 whitespace-nowrap text-slate-500">
-                  {formatDateTime(e.createdAt)}
-                </td>
-                <td className="px-4 py-3 text-slate-700">
-                  {e.targetType === "ROOM"
-                    ? `ห้อง ${e.classRoom}`
-                    : e.student
-                      ? `${e.student.studentCode} ${e.student.firstName} ${e.student.lastName}`
-                      : "-"}
-                </td>
-                <td className="px-4 py-3 text-slate-500">
-                  {e.wasteType.name}
-                </td>
-                <td className="px-4 py-3 text-slate-500">
-                  {e.quantity} {e.wasteType.unit}
-                </td>
-                <td className="px-4 py-3 font-semibold text-emerald-700">
-                  {e.pointsAwarded}
-                </td>
-                <td className="px-4 py-3 text-slate-500">
-                  {e.recordedBy?.fullName ?? "—"}
-                </td>
-                {canDelete && (
-                  <td className="px-4 py-3 text-right">
-                    <DeleteWasteButton
-                      id={e.id}
-                      label={`${e.wasteType.name} ${e.pointsAwarded} คะแนน`}
-                    />
+            {entries.map((e) => {
+              const cancelled = e.cancelledAt !== null;
+              return (
+                <tr
+                  key={e.id}
+                  className={`border-b border-slate-100 last:border-0 ${
+                    cancelled ? "opacity-60" : ""
+                  }`}
+                >
+                  <td className="px-4 py-3 whitespace-nowrap text-slate-500">
+                    {formatDateTime(e.createdAt)}
                   </td>
-                )}
-              </tr>
-            ))}
+                  <td className="px-4 py-3 text-slate-700">
+                    {e.targetType === "ROOM"
+                      ? `ห้อง ${e.classRoom}`
+                      : e.student
+                        ? `${e.student.studentCode} ${e.student.firstName} ${e.student.lastName}`
+                        : "-"}
+                    {cancelled && (
+                      <span className="mt-0.5 block text-xs text-red-500">
+                        ยกเลิกแล้ว
+                        {e.cancelledBy ? ` โดย ${e.cancelledBy.fullName}` : ""}
+                        {e.cancelReason ? `: ${e.cancelReason}` : ""}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-slate-500">
+                    {e.wasteType.name}
+                  </td>
+                  <td className="px-4 py-3 text-slate-500">
+                    {e.quantity} {e.wasteType.unit}
+                  </td>
+                  <td
+                    className={`px-4 py-3 font-semibold ${
+                      cancelled
+                        ? "text-slate-400 line-through"
+                        : "text-emerald-700"
+                    }`}
+                  >
+                    {e.pointsAwarded}
+                  </td>
+                  <td className="px-4 py-3 text-slate-500">
+                    {e.recordedBy?.fullName ?? "—"}
+                  </td>
+                  {canDelete && (
+                    <td className="px-4 py-3 text-right">
+                      {cancelled ? (
+                        <span className="text-xs text-slate-400">
+                          ยกเลิกแล้ว
+                        </span>
+                      ) : (
+                        <CancelWasteButton
+                          id={e.id}
+                          label={`${e.wasteType.name} ${e.pointsAwarded} คะแนน`}
+                        />
+                      )}
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
             {entries.length === 0 && (
               <tr>
                 <td colSpan={canDelete ? 7 : 6} className="px-4 py-2">

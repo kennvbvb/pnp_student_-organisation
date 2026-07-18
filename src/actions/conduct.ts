@@ -7,6 +7,15 @@ import { logAudit } from "@/lib/audit";
 
 export type FormState = { error?: string; success?: string };
 
+// Score bounds: conduct scores stay within [MIN, MAX]; each entry is capped.
+const CONDUCT_SCORE_MIN = 0;
+const CONDUCT_SCORE_MAX = 100;
+const CONDUCT_AMOUNT_PER_ENTRY_MAX = 50;
+
+function clampScore(value: number) {
+  return Math.min(CONDUCT_SCORE_MAX, Math.max(CONDUCT_SCORE_MIN, value));
+}
+
 export async function recordConductEntryAction(
   _prev: FormState,
   formData: FormData,
@@ -25,8 +34,13 @@ export async function recordConductEntryAction(
   if (!studentId || !reason) {
     return { error: "กรุณาเลือกนักเรียนและระบุเหตุผล" };
   }
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return { error: "จำนวนคะแนนต้องมากกว่า 0" };
+  if (!Number.isInteger(amount) || amount <= 0) {
+    return { error: "จำนวนคะแนนต้องเป็นจำนวนเต็มที่มากกว่า 0" };
+  }
+  if (amount > CONDUCT_AMOUNT_PER_ENTRY_MAX) {
+    return {
+      error: `เพิ่ม/ลดได้ครั้งละไม่เกิน ${CONDUCT_AMOUNT_PER_ENTRY_MAX} คะแนน`,
+    };
   }
 
   const student = await prisma.student.findUnique({
@@ -37,6 +51,8 @@ export async function recordConductEntryAction(
   }
 
   const delta = type === "ADD" ? amount : -amount;
+  // Clamp so the stored score never leaves [0, 100].
+  const newScore = clampScore(student.conductScore + delta);
 
   await prisma.$transaction([
     prisma.conductDeduction.create({
@@ -51,7 +67,7 @@ export async function recordConductEntryAction(
     }),
     prisma.student.update({
       where: { id: studentId },
-      data: { conductScore: { increment: delta } },
+      data: { conductScore: newScore },
     }),
   ]);
 
@@ -72,34 +88,47 @@ export async function recordConductEntryAction(
   };
 }
 
-export async function deleteConductEntryAction(formData: FormData) {
+/**
+ * Soft-cancel a conduct entry: the row is kept for auditability, marked as
+ * cancelled with a required reason, and the score effect is reversed.
+ */
+export async function cancelConductEntryAction(formData: FormData) {
   const user = await requirePermission("DELETE_CONDUCT_HISTORY");
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
+  const cancelReason = String(formData.get("cancelReason") ?? "").trim();
+  if (!id || !cancelReason) return;
 
   const entry = await prisma.conductDeduction.findUnique({
     where: { id },
     include: { student: true },
   });
-  if (!entry) return;
+  if (!entry || entry.cancelledAt) return;
 
   // Reverse the score effect: a DEDUCT gave -amount, so undo = +amount (and vice versa).
   const reverseDelta = entry.type === "ADD" ? -entry.amount : entry.amount;
+  const newScore = clampScore(entry.student.conductScore + reverseDelta);
 
   await prisma.$transaction([
-    prisma.conductDeduction.delete({ where: { id } }),
+    prisma.conductDeduction.update({
+      where: { id },
+      data: {
+        cancelledAt: new Date(),
+        cancelledByUserId: user.id,
+        cancelReason,
+      },
+    }),
     prisma.student.update({
       where: { id: entry.studentId },
-      data: { conductScore: { increment: reverseDelta } },
+      data: { conductScore: newScore },
     }),
   ]);
 
   await logAudit({
     userId: user.id,
-    action: "DELETE",
+    action: "CANCEL",
     entityType: "ConductDeduction",
     entityId: id,
-    detail: `ลบประวัติคะแนน ${entry.student.firstName} ${entry.student.lastName} (${entry.type === "ADD" ? "เพิ่ม" : "ลด"} ${entry.amount})`,
+    detail: `ยกเลิกรายการคะแนน ${entry.student.firstName} ${entry.student.lastName} (${entry.type === "ADD" ? "เพิ่ม" : "ลด"} ${entry.amount}) เหตุผล: ${cancelReason}`,
   });
 
   revalidatePath("/conduct/history");

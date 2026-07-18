@@ -16,7 +16,11 @@ const ACTION_LABELS: Record<string, string> = {
   CREATE: "สร้าง",
   UPDATE: "แก้ไข",
   DELETE: "ลบ",
+  CANCEL: "ยกเลิกรายการ",
   IMPORT: "นำเข้าข้อมูล",
+  EXPORT: "ส่งออกข้อมูล",
+  CONDUCT_ADD: "เพิ่มคะแนน",
+  CONDUCT_DEDUCT: "ลดคะแนน",
 };
 
 export default async function AdminLogsPage({

@@ -62,11 +62,15 @@ export default async function DashboardPage() {
     prisma.councilPosition.count(),
     prisma.conductDeduction.aggregate({
       _count: true,
-      where: { createdAt: { gte: startOfMonth }, type: "DEDUCT" },
+      where: {
+        createdAt: { gte: startOfMonth },
+        type: "DEDUCT",
+        cancelledAt: null,
+      },
     }),
     prisma.wasteScoreEntry.aggregate({
       _sum: { pointsAwarded: true },
-      where: { createdAt: { gte: startOfMonth } },
+      where: { createdAt: { gte: startOfMonth }, cancelledAt: null },
     }),
     prisma.planActivity.findMany({
       where: { startDate: { gte: now, lte: upcomingUntil } },
@@ -88,16 +92,16 @@ export default async function DashboardPage() {
     }),
     prisma.wasteScoreEntry.groupBy({
       by: ["classRoom"],
-      where: { targetType: "ROOM" },
+      where: { targetType: "ROOM", cancelledAt: null },
       _sum: { pointsAwarded: true },
     }),
     prisma.wasteScoreEntry.groupBy({
       by: ["studentId"],
-      where: { targetType: "STUDENT" },
+      where: { targetType: "STUDENT", cancelledAt: null },
       _sum: { pointsAwarded: true },
     }),
     prisma.conductDeduction.findMany({
-      where: { createdAt: { gte: notifySince } },
+      where: { createdAt: { gte: notifySince }, cancelledAt: null },
       orderBy: { createdAt: "desc" },
       take: 6,
       include: {
@@ -105,7 +109,7 @@ export default async function DashboardPage() {
       },
     }),
     prisma.wasteScoreEntry.findMany({
-      where: { createdAt: { gte: notifySince } },
+      where: { createdAt: { gte: notifySince }, cancelledAt: null },
       orderBy: { createdAt: "desc" },
       take: 6,
       include: {
