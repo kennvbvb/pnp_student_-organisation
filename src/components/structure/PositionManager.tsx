@@ -7,6 +7,7 @@ import {
   deletePositionAction,
   type FormState,
 } from "@/actions/structure";
+import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
 type Position = {
   id: string;
@@ -78,10 +79,14 @@ function PositionForm({
       <input type="hidden" name="holderStudentId" value={holderStudentId} />
 
       <div className="lg:col-span-2">
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="pm-title"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           ชื่อตำแหน่ง
         </label>
         <input
+          id="pm-title"
           name="title"
           required
           defaultValue={editing?.title ?? ""}
@@ -89,10 +94,14 @@ function PositionForm({
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="pm-parent"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           ตำแหน่งระดับบน
         </label>
         <select
+          id="pm-parent"
           name="parentId"
           defaultValue={editing?.parentId ?? ""}
           className={inputCls}
@@ -108,10 +117,14 @@ function PositionForm({
         </select>
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="pm-holder-room"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           ผู้ดำรงตำแหน่ง — เลือกห้อง
         </label>
         <select
+          id="pm-holder-room"
           value={holderClassRoom}
           onChange={(e) => {
             setHolderClassRoom(e.target.value);
@@ -128,10 +141,14 @@ function PositionForm({
         </select>
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="pm-holder-student"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           เลือกรายชื่อ
         </label>
         <select
+          id="pm-holder-student"
           value={holderStudentId}
           onChange={(e) => setHolderStudentId(e.target.value)}
           disabled={!holderClassRoom}
@@ -148,10 +165,14 @@ function PositionForm({
         </select>
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="pm-sortorder"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           ลำดับ
         </label>
         <input
+          id="pm-sortorder"
           type="number"
           name="sortOrder"
           defaultValue={editing?.sortOrder ?? 0}
@@ -176,9 +197,15 @@ function PositionForm({
             ยกเลิก
           </button>
         )}
-        {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+        {state.error && (
+          <p role="alert" className="text-sm text-red-600">
+            {state.error}
+          </p>
+        )}
         {state.success && (
-          <p className="text-sm text-emerald-600">{state.success}</p>
+          <p role="status" className="text-sm text-emerald-600">
+            {state.success}
+          </p>
         )}
       </div>
     </form>
@@ -242,17 +269,12 @@ export default function PositionManager({
                   </button>
                   <form action={deletePositionAction} className="inline">
                     <input type="hidden" name="id" value={p.id} />
-                    <button
-                      type="submit"
+                    <ConfirmSubmitButton
+                      message={`ต้องการลบตำแหน่ง "${p.title}" ใช่หรือไม่?`}
                       className="text-red-600 hover:underline"
-                      onClick={(e) => {
-                        if (!confirm(`ต้องการลบตำแหน่ง "${p.title}" ใช่หรือไม่?`)) {
-                          e.preventDefault();
-                        }
-                      }}
                     >
                       ลบ
-                    </button>
+                    </ConfirmSubmitButton>
                   </form>
                 </td>
               </tr>

@@ -6,6 +6,7 @@ import {
   deleteWasteTypeAction,
   type FormState,
 } from "@/actions/recycle";
+import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
 type WasteType = {
   id: string;
@@ -34,12 +35,14 @@ function AddWasteTypeForm({ onDone }: { onDone: () => void }) {
     >
       <input
         name="name"
+        aria-label="ชื่อประเภทขยะ"
         placeholder="ชื่อประเภทขยะ"
         required
         className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
       />
       <input
         name="unit"
+        aria-label="วิธีนับ"
         placeholder="วิธีนับ เช่น กิโลกรัม, ชิ้น"
         required
         className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
@@ -49,6 +52,7 @@ function AddWasteTypeForm({ onDone }: { onDone: () => void }) {
         step="any"
         min={0}
         name="pointsPerUnit"
+        aria-label="คะแนนต่อหน่วย"
         placeholder="คะแนนต่อหน่วย"
         required
         className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
@@ -61,7 +65,7 @@ function AddWasteTypeForm({ onDone }: { onDone: () => void }) {
         {pending ? "กำลังบันทึก..." : "เพิ่มประเภทขยะ"}
       </button>
       {state.error && (
-        <p className="text-sm text-red-600 sm:col-span-2 lg:col-span-4">
+        <p role="alert" className="text-sm text-red-600 sm:col-span-2 lg:col-span-4">
           {state.error}
         </p>
       )}
@@ -111,17 +115,12 @@ export default function WasteTypeManager({
             </span>
             <form action={deleteWasteTypeAction}>
               <input type="hidden" name="id" value={w.id} />
-              <button
-                type="submit"
+              <ConfirmSubmitButton
+                message={`ต้องการลบประเภทขยะ "${w.name}" ใช่หรือไม่?`}
                 className="text-xs text-red-600 hover:underline"
-                onClick={(e) => {
-                  if (!confirm(`ต้องการลบประเภทขยะ "${w.name}" ใช่หรือไม่?`)) {
-                    e.preventDefault();
-                  }
-                }}
               >
                 ลบ
-              </button>
+              </ConfirmSubmitButton>
             </form>
           </li>
         ))}

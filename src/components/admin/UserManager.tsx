@@ -16,6 +16,7 @@ import {
   type Permission,
 } from "@/lib/permissions";
 import type { Role } from "@/generated/prisma/enums";
+import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
 export type UserRow = {
   id: string;
@@ -105,20 +106,28 @@ function CreateUserForm({
     >
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">
+          <label
+            htmlFor="uc-username"
+            className="mb-1 block text-xs font-medium text-slate-600"
+          >
             ชื่อผู้ใช้
           </label>
           <input
+            id="uc-username"
             name="username"
             required
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">
+          <label
+            htmlFor="uc-password"
+            className="mb-1 block text-xs font-medium text-slate-600"
+          >
             รหัสผ่านเริ่มต้น
           </label>
           <input
+            id="uc-password"
             type="password"
             name="password"
             required
@@ -127,20 +136,28 @@ function CreateUserForm({
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">
+          <label
+            htmlFor="uc-fullname"
+            className="mb-1 block text-xs font-medium text-slate-600"
+          >
             ชื่อ-นามสกุล
           </label>
           <input
+            id="uc-fullname"
             name="fullName"
             required
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">
+          <label
+            htmlFor="uc-role"
+            className="mb-1 block text-xs font-medium text-slate-600"
+          >
             บทบาท
           </label>
           <select
+            id="uc-role"
             name="role"
             value={role}
             onChange={(e) => handleRoleChange(e.target.value as Role)}
@@ -174,7 +191,11 @@ function CreateUserForm({
         >
           {pending ? "กำลังสร้าง..." : "สร้างผู้ใช้"}
         </button>
-        {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+        {state.error && (
+          <p role="alert" className="text-sm text-red-600">
+            {state.error}
+          </p>
+        )}
       </div>
     </form>
   );
@@ -220,10 +241,14 @@ function EditUserForm({
           <input type="hidden" name="id" value={user.id} />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
+              <label
+                htmlFor="ue-fullname"
+                className="mb-1 block text-xs font-medium text-slate-600"
+              >
                 ชื่อ-นามสกุล
               </label>
               <input
+                id="ue-fullname"
                 name="fullName"
                 required
                 defaultValue={user.fullName}
@@ -231,10 +256,14 @@ function EditUserForm({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
+              <label
+                htmlFor="ue-role"
+                className="mb-1 block text-xs font-medium text-slate-600"
+              >
                 บทบาท
               </label>
               <select
+                id="ue-role"
                 name="role"
                 defaultValue={user.role}
                 disabled={!actorIsAdmin && user.role === "ADMIN"}
@@ -250,10 +279,14 @@ function EditUserForm({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
+              <label
+                htmlFor="ue-newpassword"
+                className="mb-1 block text-xs font-medium text-slate-600"
+              >
                 ตั้งรหัสผ่านใหม่ (ถ้าต้องการ)
               </label>
               <input
+                id="ue-newpassword"
                 type="password"
                 name="newPassword"
                 minLength={8}
@@ -299,7 +332,9 @@ function EditUserForm({
               ยกเลิก
             </button>
             {state.error && (
-              <p className="text-sm text-red-600">{state.error}</p>
+              <p role="alert" className="text-sm text-red-600">
+                {state.error}
+              </p>
             )}
           </div>
         </form>
@@ -397,19 +432,12 @@ export default function UserManager({
                     {canEdit && u.id !== actorId && (
                       <form action={deleteUserAction} className="inline">
                         <input type="hidden" name="id" value={u.id} />
-                        <button
-                          type="submit"
+                        <ConfirmSubmitButton
+                          message={`ต้องการลบผู้ใช้ "${u.username}" ใช่หรือไม่?`}
                           className="text-red-600 hover:underline"
-                          onClick={(e) => {
-                            if (
-                              !confirm(`ต้องการลบผู้ใช้ "${u.username}" ใช่หรือไม่?`)
-                            ) {
-                              e.preventDefault();
-                            }
-                          }}
                         >
                           ลบ
-                        </button>
+                        </ConfirmSubmitButton>
                       </form>
                     )}
                   </td>

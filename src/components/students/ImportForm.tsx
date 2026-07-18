@@ -51,10 +51,14 @@ export default function ImportForm() {
     <div className="rounded-xl border border-slate-200 bg-white p-5">
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">
+          <label
+            htmlFor="import-file"
+            className="mb-1 block text-xs font-medium text-slate-600"
+          >
             เลือกไฟล์ Excel (.xlsx)
           </label>
           <input
+            id="import-file"
             type="file"
             accept=".xlsx,.xls"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
@@ -71,13 +75,16 @@ export default function ImportForm() {
       </form>
 
       {error && (
-        <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+        <p
+          role="alert"
+          className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600"
+        >
           {error}
         </p>
       )}
 
       {result && (
-        <div className="mt-4 space-y-2">
+        <div role="status" className="mt-4 space-y-2">
           <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
             นำเข้าสำเร็จ: สร้างใหม่ {result.created} รายการ, อัปเดต{" "}
             {result.updated} รายการ

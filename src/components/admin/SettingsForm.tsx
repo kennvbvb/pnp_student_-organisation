@@ -21,30 +21,42 @@ export default function SettingsForm({
       className="max-w-xl space-y-4 rounded-xl border border-slate-200 bg-white p-5"
     >
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="st-schoolname"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           ชื่อโรงเรียน
         </label>
         <input
+          id="st-schoolname"
           name="SCHOOL_NAME"
           defaultValue={settings.SCHOOL_NAME ?? ""}
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="st-sitetitle"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           ชื่อเว็บไซต์ (แสดงในเมนู)
         </label>
         <input
+          id="st-sitetitle"
           name="SITE_TITLE"
           defaultValue={settings.SITE_TITLE ?? ""}
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label
+          htmlFor="st-contact"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
           ข้อมูลติดต่อ
         </label>
         <textarea
+          id="st-contact"
           name="CONTACT_INFO"
           defaultValue={settings.CONTACT_INFO ?? ""}
           rows={3}
@@ -59,9 +71,15 @@ export default function SettingsForm({
         >
           {pending ? "กำลังบันทึก..." : "บันทึกการตั้งค่า"}
         </button>
-        {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+        {state.error && (
+          <p role="alert" className="text-sm text-red-600">
+            {state.error}
+          </p>
+        )}
         {state.success && (
-          <p className="text-sm text-emerald-600">{state.success}</p>
+          <p role="status" className="text-sm text-emerald-600">
+            {state.success}
+          </p>
         )}
       </div>
     </form>

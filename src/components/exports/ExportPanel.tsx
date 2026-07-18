@@ -106,10 +106,14 @@ export default function ExportPanel({
 
         {conductScope === "room" && (
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
+            <label
+              htmlFor="ex-conduct-room"
+              className="mb-1 block text-xs font-medium text-slate-600"
+            >
               เลือกห้อง
             </label>
             <select
+              id="ex-conduct-room"
               value={conductRoom}
               onChange={(e) => setConductRoom(e.target.value)}
               className={selectCls}
@@ -127,10 +131,14 @@ export default function ExportPanel({
         {conductScope === "student" && (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
+              <label
+                htmlFor="ex-conduct-sroom"
+                className="mb-1 block text-xs font-medium text-slate-600"
+              >
                 1. เลือกห้อง
               </label>
               <select
+                id="ex-conduct-sroom"
                 value={conductStudentRoom}
                 onChange={(e) => {
                   setConductStudentRoom(e.target.value);
@@ -147,10 +155,14 @@ export default function ExportPanel({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
+              <label
+                htmlFor="ex-conduct-student"
+                className="mb-1 block text-xs font-medium text-slate-600"
+              >
                 2. เลือกนักเรียน
               </label>
               <select
+                id="ex-conduct-student"
                 value={conductStudentId}
                 onChange={(e) => setConductStudentId(e.target.value)}
                 disabled={!conductStudentRoom}
@@ -212,10 +224,14 @@ export default function ExportPanel({
 
         {recycleScope === "room" && (
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
+            <label
+              htmlFor="ex-recycle-room"
+              className="mb-1 block text-xs font-medium text-slate-600"
+            >
               เลือกห้อง
             </label>
             <select
+              id="ex-recycle-room"
               value={recycleRoom}
               onChange={(e) => setRecycleRoom(e.target.value)}
               className={selectCls}
@@ -233,10 +249,14 @@ export default function ExportPanel({
         {recycleScope === "student" && (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
+              <label
+                htmlFor="ex-recycle-sroom"
+                className="mb-1 block text-xs font-medium text-slate-600"
+              >
                 1. เลือกห้อง
               </label>
               <select
+                id="ex-recycle-sroom"
                 value={recycleStudentRoom}
                 onChange={(e) => {
                   setRecycleStudentRoom(e.target.value);
@@ -253,10 +273,14 @@ export default function ExportPanel({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
+              <label
+                htmlFor="ex-recycle-student"
+                className="mb-1 block text-xs font-medium text-slate-600"
+              >
                 2. เลือกนักเรียน
               </label>
               <select
+                id="ex-recycle-student"
                 value={recycleStudentId}
                 onChange={(e) => setRecycleStudentId(e.target.value)}
                 disabled={!recycleStudentRoom}
