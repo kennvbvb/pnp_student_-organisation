@@ -99,10 +99,14 @@ export default function ConductForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {/* Step 1: classroom */}
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">
+          <label
+            htmlFor="cf-classroom"
+            className="mb-1 block text-xs font-medium text-slate-600"
+          >
             1. เลือกชั้น/ห้อง
           </label>
           <select
+            id="cf-classroom"
             value={classRoom}
             onChange={(e) => {
               setClassRoom(e.target.value);
@@ -121,10 +125,14 @@ export default function ConductForm({
 
         {/* Step 2: student (filtered by classroom) */}
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">
+          <label
+            htmlFor="cf-student"
+            className="mb-1 block text-xs font-medium text-slate-600"
+          >
             2. เลือกนักเรียน
           </label>
           <select
+            id="cf-student"
             value={studentId}
             onChange={(e) => setStudentId(e.target.value)}
             disabled={!classRoom}
@@ -143,10 +151,14 @@ export default function ConductForm({
 
         {/* Amount */}
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">
+          <label
+            htmlFor="cf-amount"
+            className="mb-1 block text-xs font-medium text-slate-600"
+          >
             จำนวนคะแนน
           </label>
           <input
+            id="cf-amount"
             type="number"
             name="amount"
             min={1}
@@ -157,12 +169,16 @@ export default function ConductForm({
 
         {/* Reason dropdown (feature 3) */}
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">
+          <label
+            htmlFor="cf-reason"
+            className="mb-1 block text-xs font-medium text-slate-600"
+          >
             เหตุผล
           </label>
           {reasonMode === "select" ? (
             <div className="space-y-1">
               <select
+                id="cf-reason"
                 name="reason"
                 value={reasonSelect}
                 onChange={(e) => {
@@ -188,9 +204,11 @@ export default function ConductForm({
           ) : (
             <div className="flex gap-2">
               <input
+                id="cf-reason"
                 name="reason"
                 required
                 autoFocus
+                aria-label="พิมพ์เหตุผล"
                 placeholder="พิมพ์เหตุผล"
                 className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-800/20"
               />
@@ -227,9 +245,15 @@ export default function ConductForm({
             คะแนนปัจจุบัน: <strong>{selectedStudent.conductScore}</strong>
           </span>
         )}
-        {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+        {state.error && (
+          <p role="alert" className="text-sm text-red-600">
+            {state.error}
+          </p>
+        )}
         {state.success && (
-          <p className="text-sm text-emerald-600">{state.success}</p>
+          <p role="status" className="text-sm text-emerald-600">
+            {state.success}
+          </p>
         )}
       </div>
     </form>

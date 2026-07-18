@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CurrentUser } from "@/lib/session";
 import Sidebar from "@/components/Sidebar";
 
@@ -12,6 +12,48 @@ export default function AppShell({
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const openButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Close on Escape, trap focus within the drawer, and restore focus on close.
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const drawer = drawerRef.current;
+    const openButton = openButtonRef.current;
+    // Move focus into the drawer.
+    const focusables = drawer?.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    focusables?.[0]?.focus();
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setMobileOpen(false);
+        return;
+      }
+      if (e.key === "Tab" && focusables && focusables.length > 0) {
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "";
+      // Return focus to the button that opened the drawer.
+      openButton?.focus();
+    };
+  }, [mobileOpen]);
 
   return (
     <div className="flex min-h-screen flex-1">
@@ -29,7 +71,12 @@ export default function AppShell({
         aria-hidden="true"
       />
       <div
-        className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-out lg:hidden ${
+        ref={drawerRef}
+        id="mobile-nav"
+        role="dialog"
+        aria-modal="true"
+        aria-label="เมนูนำทาง"
+        className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-out motion-reduce:transition-none lg:hidden ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -40,9 +87,12 @@ export default function AppShell({
         {/* Mobile top bar */}
         <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur lg:hidden">
           <button
+            ref={openButtonRef}
             type="button"
             onClick={() => setMobileOpen(true)}
             aria-label="เปิดเมนู"
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition-colors hover:bg-slate-50 active:scale-95"
           >
             <svg
@@ -53,6 +103,7 @@ export default function AppShell({
               stroke="currentColor"
               strokeWidth="1.8"
               strokeLinecap="round"
+              aria-hidden="true"
             >
               <path d="M4 6h16M4 12h16M4 18h16" />
             </svg>

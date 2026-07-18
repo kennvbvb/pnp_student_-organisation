@@ -1,6 +1,9 @@
 import { requirePermission } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import PageHeader from "@/components/PageHeader";
+import Pagination, { parsePage } from "@/components/Pagination";
+
+const PAGE_SIZE = 25;
 
 function formatDateTime(date: Date) {
   return new Intl.DateTimeFormat("th-TH", {
@@ -19,29 +22,42 @@ const ACTION_LABELS: Record<string, string> = {
 export default async function AdminLogsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; loginPage?: string; auditPage?: string }>;
 }) {
   await requirePermission("VIEW_LOGS");
-  const { q = "" } = await searchParams;
+  const { q = "", loginPage: loginPageParam, auditPage: auditPageParam } =
+    await searchParams;
+
+  const loginWhere = q ? { username: { contains: q } } : undefined;
+  const auditWhere = q
+    ? {
+        OR: [
+          { entityType: { contains: q } },
+          { detail: { contains: q } },
+          { user: { username: { contains: q } } },
+        ],
+      }
+    : undefined;
+
+  const [loginTotal, auditTotal] = await Promise.all([
+    prisma.loginLog.count({ where: loginWhere }),
+    prisma.auditLog.count({ where: auditWhere }),
+  ]);
+  const loginPage = parsePage(loginPageParam, Math.ceil(loginTotal / PAGE_SIZE));
+  const auditPage = parsePage(auditPageParam, Math.ceil(auditTotal / PAGE_SIZE));
 
   const [loginLogs, auditLogs] = await Promise.all([
     prisma.loginLog.findMany({
-      where: q ? { username: { contains: q } } : undefined,
+      where: loginWhere,
       orderBy: { createdAt: "desc" },
-      take: 100,
+      skip: (loginPage - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
     }),
     prisma.auditLog.findMany({
-      where: q
-        ? {
-            OR: [
-              { entityType: { contains: q } },
-              { detail: { contains: q } },
-              { user: { username: { contains: q } } },
-            ],
-          }
-        : undefined,
+      where: auditWhere,
       orderBy: { createdAt: "desc" },
-      take: 100,
+      skip: (auditPage - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include: { user: { select: { username: true, fullName: true } } },
     }),
   ]);
@@ -58,6 +74,7 @@ export default async function AdminLogsPage({
           type="text"
           name="q"
           defaultValue={q}
+          aria-label="ค้นหาชื่อผู้ใช้ หรือรายการ"
           placeholder="ค้นหาชื่อผู้ใช้ หรือรายการ"
           className="w-80 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
         />
@@ -122,6 +139,13 @@ export default async function AdminLogsPage({
             </tbody>
           </table>
         </div>
+        <Pagination
+          page={loginPage}
+          pageSize={PAGE_SIZE}
+          total={loginTotal}
+          params={{ q }}
+          pageKey="loginPage"
+        />
       </div>
 
       <div>
@@ -169,6 +193,13 @@ export default async function AdminLogsPage({
             </tbody>
           </table>
         </div>
+        <Pagination
+          page={auditPage}
+          pageSize={PAGE_SIZE}
+          total={auditTotal}
+          params={{ q }}
+          pageKey="auditPage"
+        />
       </div>
     </div>
   );
