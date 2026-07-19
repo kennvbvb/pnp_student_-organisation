@@ -2,13 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { CurrentUser } from "@/lib/session";
-import Sidebar from "@/components/Sidebar";
+import Sidebar, { type SidebarBranding } from "@/components/Sidebar";
 
 export default function AppShell({
   user,
+  branding,
   children,
 }: {
   user: CurrentUser;
+  branding: SidebarBranding;
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -59,7 +61,7 @@ export default function AppShell({
     <div className="flex min-h-screen flex-1">
       {/* Desktop sidebar */}
       <div className="sticky top-0 hidden h-screen lg:block">
-        <Sidebar user={user} />
+        <Sidebar user={user} branding={branding} />
       </div>
 
       {/* Mobile drawer + backdrop */}
@@ -80,7 +82,11 @@ export default function AppShell({
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <Sidebar user={user} onNavigate={() => setMobileOpen(false)} />
+        <Sidebar
+          user={user}
+          branding={branding}
+          onNavigate={() => setMobileOpen(false)}
+        />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -109,11 +115,20 @@ export default function AppShell({
             </svg>
           </button>
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-800 to-indigo-900 text-sm font-bold text-white">
-              สภ
-            </div>
+            {branding.logo ? (
+              // eslint-disable-next-line @next/next/no-img-element -- data URL from site settings
+              <img
+                src={branding.logo}
+                alt={`โลโก้${branding.schoolName}`}
+                className="h-8 w-8 rounded-lg border border-slate-100 object-contain"
+              />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-800 to-indigo-900 text-sm font-bold text-white">
+                สภ
+              </div>
+            )}
             <span className="text-sm font-bold text-slate-800">
-              ระบบสภานักเรียน
+              {branding.siteTitle}
             </span>
           </div>
         </header>

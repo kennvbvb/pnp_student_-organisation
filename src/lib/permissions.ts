@@ -73,3 +73,9 @@ export const ADMIN_ONLY_GRANTABLE: Permission[] = ["MANAGE_USERS"];
 export function isAdminRole(role: Role) {
   return role === "SUPER_ADMIN" || role === "ADMIN";
 }
+
+/**
+ * The one root administrator account. Nobody else can edit or delete it,
+ * and only this account may delete other SUPER_ADMIN accounts.
+ */
+export const ROOT_ADMIN_USERNAME = "admin";

@@ -131,11 +131,19 @@ function NavLink({
   );
 }
 
+export type SidebarBranding = {
+  siteTitle: string;
+  schoolName: string;
+  logo: string | null;
+};
+
 export default function Sidebar({
   user,
+  branding,
   onNavigate,
 }: {
   user: CurrentUser;
+  branding: SidebarBranding;
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
@@ -146,14 +154,23 @@ export default function Sidebar({
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-slate-200 bg-white/95 backdrop-blur">
       <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-5">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-800 to-indigo-900 text-lg font-bold text-white shadow-sm shadow-blue-900/30">
-          สภ
-        </div>
+        {branding.logo ? (
+          // eslint-disable-next-line @next/next/no-img-element -- data URL from site settings
+          <img
+            src={branding.logo}
+            alt={`โลโก้${branding.schoolName}`}
+            className="h-11 w-11 shrink-0 rounded-xl border border-slate-100 object-contain"
+          />
+        ) : (
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-800 to-indigo-900 text-lg font-bold text-white shadow-sm shadow-blue-900/30">
+            สภ
+          </div>
+        )}
         <div className="min-w-0">
           <p className="truncate text-sm font-bold text-slate-800">
-            ระบบสภานักเรียน
+            {branding.siteTitle}
           </p>
-          <p className="truncate text-xs text-slate-400">โรงเรียนวัดพนมพริก</p>
+          <p className="truncate text-xs text-slate-400">{branding.schoolName}</p>
         </div>
       </div>
 

@@ -29,6 +29,7 @@ export default async function AdminUsersPage() {
         }))}
         actorId={actor.id}
         actorRole={actor.role}
+        actorUsername={actor.username}
       />
     </div>
   );

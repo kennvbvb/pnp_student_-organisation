@@ -4,6 +4,7 @@ import { useActionState, useEffect, useMemo, useState } from "react";
 import {
   createPositionAction,
   updatePositionAction,
+  renamePositionAction,
   deletePositionAction,
   type FormState,
 } from "@/actions/structure";
@@ -212,6 +213,52 @@ function PositionForm({
   );
 }
 
+function InlineRename({
+  position,
+  onDone,
+}: {
+  position: Position;
+  onDone: () => void;
+}) {
+  const [state, formAction, pending] = useActionState(
+    renamePositionAction,
+    initialState,
+  );
+
+  useEffect(() => {
+    if (state.success !== undefined) onDone();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
+
+  return (
+    <form action={formAction} className="flex items-center gap-2">
+      <input type="hidden" name="id" value={position.id} />
+      <input
+        name="title"
+        defaultValue={position.title}
+        aria-label="ชื่อตำแหน่งใหม่"
+        autoFocus
+        required
+        className="w-full rounded-lg border border-blue-300 px-2 py-1 text-sm focus:border-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-800"
+      />
+      <button
+        type="submit"
+        disabled={pending}
+        className="shrink-0 rounded-lg bg-blue-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-800 disabled:opacity-60"
+      >
+        บันทึก
+      </button>
+      <button
+        type="button"
+        onClick={onDone}
+        className="shrink-0 rounded-lg border border-slate-300 px-2.5 py-1 text-xs text-slate-500 hover:bg-slate-50"
+      >
+        ยกเลิก
+      </button>
+    </form>
+  );
+}
+
 export default function PositionManager({
   positions,
   students,
@@ -222,6 +269,7 @@ export default function PositionManager({
   classRooms: string[];
 }) {
   const [editing, setEditing] = useState<Position | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
   const positionMap = new Map(positions.map((p) => [p.id, p.title]));
 
   return (
@@ -250,7 +298,14 @@ export default function PositionManager({
             {positions.map((p) => (
               <tr key={p.id} className="border-b border-slate-100 last:border-0">
                 <td className="px-4 py-3 font-medium text-slate-800">
-                  {p.title}
+                  {renamingId === p.id ? (
+                    <InlineRename
+                      position={p}
+                      onDone={() => setRenamingId(null)}
+                    />
+                  ) : (
+                    p.title
+                  )}
                 </td>
                 <td className="px-4 py-3 text-slate-500">
                   {p.parentId ? positionMap.get(p.parentId) : "-"}
@@ -260,6 +315,15 @@ export default function PositionManager({
                 </td>
                 <td className="px-4 py-3 text-slate-500">{p.sortOrder}</td>
                 <td className="px-4 py-3 text-right">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setRenamingId(renamingId === p.id ? null : p.id)
+                    }
+                    className="mr-3 text-slate-600 hover:underline"
+                  >
+                    เปลี่ยนชื่อ
+                  </button>
                   <button
                     type="button"
                     onClick={() => setEditing(p)}

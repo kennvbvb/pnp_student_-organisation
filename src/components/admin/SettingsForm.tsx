@@ -63,6 +63,35 @@ export default function SettingsForm({
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
         />
       </div>
+      <div>
+        <label
+          htmlFor="st-logo"
+          className="mb-1 block text-xs font-medium text-slate-600"
+        >
+          โลโก้โรงเรียน (PNG/JPG/WebP ไม่เกิน 300 KB)
+        </label>
+        {settings.SCHOOL_LOGO && (
+          <div className="mb-2 flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element -- data URL, not an optimizable remote asset */}
+            <img
+              src={settings.SCHOOL_LOGO}
+              alt="โลโก้โรงเรียนปัจจุบัน"
+              className="h-16 w-16 rounded-xl border border-slate-200 object-contain"
+            />
+            <label className="flex items-center gap-2 text-xs text-slate-600">
+              <input type="checkbox" name="removeLogo" />
+              ลบโลโก้ออก (กลับไปใช้ตราสัญลักษณ์เริ่มต้น)
+            </label>
+          </div>
+        )}
+        <input
+          id="st-logo"
+          type="file"
+          name="logoFile"
+          accept="image/png,image/jpeg,image/webp"
+          className="block text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium hover:file:bg-slate-200"
+        />
+      </div>
       <div className="flex items-center gap-3">
         <button
           type="submit"

@@ -7,6 +7,10 @@ import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import AlertBanner from "@/components/AlertBanner";
 import {
+  ConductTrendChart,
+  RecycleBarChart,
+} from "@/components/dashboard/DashboardCharts";
+import {
   StudentsIcon,
   StructureIcon,
   ConductIcon,
@@ -159,6 +163,45 @@ export default async function DashboardPage() {
   const kinderRoomRows = [...kinderRooms.entries()].sort((a, b) =>
     a[0].localeCompare(b[0], "th"),
   );
+
+  // --- Chart data ---
+  // Monthly conduct trend over the last 12 months (add vs deduct counts).
+  const trendStart = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  const conductForTrend = await prisma.conductDeduction.findMany({
+    where: { createdAt: { gte: trendStart }, cancelledAt: null },
+    select: { createdAt: true, type: true },
+  });
+  const THAI_MONTHS = [
+    "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+    "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
+  ];
+  const trendBuckets: { key: string; label: string; add: number; deduct: number }[] =
+    [];
+  const bucketIndex = new Map<string, number>();
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    bucketIndex.set(key, trendBuckets.length);
+    trendBuckets.push({ key, label: THAI_MONTHS[d.getMonth()], add: 0, deduct: 0 });
+  }
+  for (const c of conductForTrend) {
+    const key = `${c.createdAt.getFullYear()}-${c.createdAt.getMonth()}`;
+    const idx = bucketIndex.get(key);
+    if (idx === undefined) continue;
+    if (c.type === "ADD") trendBuckets[idx].add += 1;
+    else trendBuckets[idx].deduct += 1;
+  }
+  const trendData = trendBuckets.map((b) => ({
+    label: b.label,
+    add: b.add,
+    deduct: b.deduct,
+  }));
+
+  // Per-room recycle points (current year), top 8.
+  const recycleBarData = [...roomRecycle.entries()]
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
 
   return (
     <div className="space-y-8">
@@ -320,6 +363,12 @@ export default async function DashboardPage() {
           icon={RecycleIcon}
           accent="emerald"
         />
+      </div>
+
+      {/* Charts: monthly conduct trend + per-room recycle bars */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ConductTrendChart data={trendData} />
+        <RecycleBarChart data={recycleBarData} />
       </div>
 
       {/* Feature 5: kindergarten per room */}

@@ -27,6 +27,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // The root path decides its own destination (dashboard vs public landing).
+  if (pathname === "/") {
+    return NextResponse.next();
+  }
+
   if (!authed) {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
@@ -37,7 +42,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|login).*)",
+    // Exclude api, static assets, the login page, and the public pages
+    // (public landing + read-only structure/leaderboard for non-logged-in users).
+    "/((?!api|_next/static|_next/image|favicon.ico|login|public).*)",
     "/login",
   ],
 };
