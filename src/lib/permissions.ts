@@ -34,6 +34,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
 
 /** Permissions granted by default to a role when a user account is created. Admins can add/remove per-user afterward. */
 export const ROLE_DEFAULT_PERMISSIONS: Record<Role, Permission[]> = {
+  SUPER_ADMIN: [...PERMISSIONS],
   ADMIN: [...PERMISSIONS],
   PRESIDENT: [
     "VIEW_LOGS",
@@ -57,6 +58,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<Role, Permission[]> = {
 };
 
 export const ROLE_LABELS: Record<Role, string> = {
+  SUPER_ADMIN: "ผู้ดูแลระบบหลัก",
   ADMIN: "ผู้ดูแลระบบ",
   PRESIDENT: "ประธานนักเรียน",
   VICE_PRESIDENT: "รองประธานนักเรียน",
@@ -64,5 +66,10 @@ export const ROLE_LABELS: Record<Role, string> = {
   MEMBER: "สมาชิกสภานักเรียน",
 };
 
-/** Permissions that only ADMIN accounts may grant, to prevent privilege escalation by delegated user-managers. */
+/** Permissions that only admin-level accounts may grant, to prevent privilege escalation by delegated user-managers. */
 export const ADMIN_ONLY_GRANTABLE: Permission[] = ["MANAGE_USERS"];
+
+/** True for roles with full administrative power (implicit all permissions). */
+export function isAdminRole(role: Role) {
+  return role === "SUPER_ADMIN" || role === "ADMIN";
+}

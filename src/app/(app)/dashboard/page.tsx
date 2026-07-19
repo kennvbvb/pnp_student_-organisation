@@ -38,7 +38,7 @@ function formatDateTime(date: Date) {
 
 export default async function DashboardPage() {
   const user = await requireUser();
-  const isAdmin = user.role === "ADMIN";
+  const isAdmin = user.role === "SUPER_ADMIN" || user.role === "ADMIN";
 
   const academicYear = await getCurrentAcademicYear();
   const now = new Date();

@@ -38,7 +38,8 @@ export default async function AdminLogsPage({
         OR: [
           { entityType: { contains: q } },
           { detail: { contains: q } },
-          { user: { username: { contains: q } } },
+          { actorUsername: { contains: q } },
+          { user: { is: { username: { contains: q } } } },
         ],
       }
     : undefined;
@@ -174,7 +175,7 @@ export default async function AdminLogsPage({
                     {formatDateTime(log.createdAt)}
                   </td>
                   <td className="px-4 py-3 font-medium text-slate-800">
-                    {log.user.fullName}
+                    {log.user?.fullName ?? log.actorFullName ?? "—"}
                   </td>
                   <td className="px-4 py-3 text-slate-600">
                     {ACTION_LABELS[log.action] ?? log.action}
