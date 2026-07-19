@@ -14,6 +14,7 @@ import {
   ROLE_DEFAULT_PERMISSIONS,
   ADMIN_ONLY_GRANTABLE,
   isAdminRole,
+  ROOT_ADMIN_USERNAME,
   type Permission,
 } from "@/lib/permissions";
 import type { Role } from "@/generated/prisma/enums";
@@ -387,15 +388,18 @@ export default function UserManager({
   users,
   actorId,
   actorRole,
+  actorUsername,
 }: {
   users: UserRow[];
   actorId: string;
   actorRole: Role;
+  actorUsername: string;
 }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const actorIsSuperAdmin = actorRole === "SUPER_ADMIN";
   const actorIsAdmin = isAdminRole(actorRole);
+  const actorIsRoot = actorUsername === ROOT_ADMIN_USERNAME;
 
   return (
     <div className="space-y-4">
@@ -430,18 +434,23 @@ export default function UserManager({
           <tbody>
             {users.map((u) => {
               const isSelf = u.id === actorId;
+              const targetIsRoot = u.username === ROOT_ADMIN_USERNAME;
               const targetIsSuperAdmin = u.role === "SUPER_ADMIN";
               const targetIsAdmin = u.role === "ADMIN";
               // Mirrors the server rules — the server re-checks everything.
-              const canEdit = targetIsSuperAdmin
-                ? isSelf || actorIsSuperAdmin
-                : targetIsAdmin
+              const canEdit = targetIsRoot
+                ? isSelf
+                : targetIsSuperAdmin || targetIsAdmin
                   ? isSelf || actorIsSuperAdmin
                   : actorIsAdmin || !isAdminRole(u.role);
               const canDelete =
                 !isSelf &&
-                !targetIsSuperAdmin &&
-                (targetIsAdmin ? actorIsSuperAdmin : true);
+                !targetIsRoot &&
+                (targetIsSuperAdmin
+                  ? actorIsRoot
+                  : targetIsAdmin
+                    ? actorIsSuperAdmin
+                    : true);
               return editingId === u.id ? (
                 <EditUserForm
                   key={u.id}
@@ -494,9 +503,11 @@ export default function UserManager({
                       <span
                         className="text-xs text-slate-300"
                         title={
-                          targetIsSuperAdmin
-                            ? "บัญชีผู้ดูแลระบบหลักได้รับการปกป้อง"
-                            : "เฉพาะผู้ดูแลระบบหลักเท่านั้นที่จัดการบัญชีนี้ได้"
+                          targetIsRoot
+                            ? "บัญชีผู้ดูแลระบบหลักสูงสุดได้รับการปกป้อง"
+                            : targetIsSuperAdmin
+                              ? "บัญชีผู้ดูแลระบบหลักได้รับการปกป้อง"
+                              : "เฉพาะผู้ดูแลระบบหลักเท่านั้นที่จัดการบัญชีนี้ได้"
                         }
                       >
                         —

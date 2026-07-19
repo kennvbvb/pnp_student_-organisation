@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth-guard";
+import { getBranding } from "@/lib/settings";
 import AppShell from "@/components/AppShell";
 
 export default async function AppLayout({
@@ -15,5 +16,11 @@ export default async function AppLayout({
     redirect("/account/password");
   }
 
-  return <AppShell user={user}>{children}</AppShell>;
+  const branding = await getBranding();
+
+  return (
+    <AppShell user={user} branding={branding}>
+      {children}
+    </AppShell>
+  );
 }

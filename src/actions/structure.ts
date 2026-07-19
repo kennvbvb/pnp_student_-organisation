@@ -92,6 +92,38 @@ export async function updatePositionAction(
   return { success: "บันทึกการแก้ไขเรียบร้อยแล้ว" };
 }
 
+/** Lightweight inline rename — only changes the position title. */
+export async function renamePositionAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requirePermission("MANAGE_STRUCTURE");
+
+  const id = String(formData.get("id") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  if (!id || !title) {
+    return { error: "กรุณากรอกชื่อตำแหน่ง" };
+  }
+
+  const before = await prisma.councilPosition.findUnique({ where: { id } });
+  if (!before) return { error: "ไม่พบตำแหน่งนี้" };
+  if (before.title === title) return { success: "" };
+
+  await prisma.councilPosition.update({ where: { id }, data: { title } });
+
+  await logAudit({
+    userId: user.id,
+    action: "UPDATE",
+    entityType: "CouncilPosition",
+    entityId: id,
+    detail: `เปลี่ยนชื่อตำแหน่ง: "${before.title}" → "${title}"`,
+  });
+
+  revalidatePath("/structure");
+  revalidatePath("/structure/manage");
+  return { success: "เปลี่ยนชื่อตำแหน่งแล้ว" };
+}
+
 export async function deletePositionAction(formData: FormData) {
   const user = await requirePermission("MANAGE_STRUCTURE");
   const id = String(formData.get("id") ?? "");

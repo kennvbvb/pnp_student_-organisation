@@ -9,6 +9,7 @@ import {
   PERMISSIONS,
   ADMIN_ONLY_GRANTABLE,
   isAdminRole,
+  ROOT_ADMIN_USERNAME,
   type Permission,
 } from "@/lib/permissions";
 import type { Role } from "@/generated/prisma/enums";
@@ -120,6 +121,10 @@ export async function updateUserAction(
   const actorIsSuperAdmin = actor.role === "SUPER_ADMIN";
   const targetIsSuperAdmin = target.role === "SUPER_ADMIN";
 
+  // The root admin account is editable only by itself.
+  if (target.username === ROOT_ADMIN_USERNAME && actor.id !== target.id) {
+    return { error: "บัญชีผู้ดูแลระบบหลักสูงสุดแก้ไขได้โดยเจ้าของบัญชีเท่านั้น" };
+  }
   // Primary-admin protections: only a super admin may touch a super admin
   // account or assign the role.
   if (targetIsSuperAdmin && !actorIsSuperAdmin) {
@@ -244,11 +249,20 @@ export async function deleteUserAction(
     return { error: "ไม่พบผู้ใช้นี้ในระบบ" };
   }
 
-  // The primary admin account can never be deleted from the web UI.
-  if (target.role === "SUPER_ADMIN") {
-    return { error: "ไม่อนุญาตให้ลบบัญชีผู้ดูแลระบบหลัก" };
+  // The root admin account can never be deleted from the web UI.
+  if (target.username === ROOT_ADMIN_USERNAME) {
+    return { error: "ไม่อนุญาตให้ลบบัญชีผู้ดูแลระบบหลักสูงสุด" };
   }
-  // Regular admins are deletable only by the super admin.
+  // Other super admins are deletable only by the root admin account.
+  if (
+    target.role === "SUPER_ADMIN" &&
+    actor.username !== ROOT_ADMIN_USERNAME
+  ) {
+    return {
+      error: "เฉพาะบัญชีผู้ดูแลระบบหลักสูงสุด (admin) เท่านั้นที่ลบผู้ดูแลระบบหลักคนอื่นได้",
+    };
+  }
+  // Regular admins are deletable only by a super admin.
   if (target.role === "ADMIN" && actor.role !== "SUPER_ADMIN") {
     return {
       error: "เฉพาะผู้ดูแลระบบหลักเท่านั้นที่ลบบัญชีผู้ดูแลระบบได้",
