@@ -11,6 +11,7 @@ datasource db {
 }
 
 enum Role {
+  SUPER_ADMIN
   ADMIN
   PRESIDENT
   VICE_PRESIDENT
@@ -76,13 +77,17 @@ model LoginLog {
 
 model AuditLog {
   id         String   @id @default(cuid())
-  userId     String
+  userId     String?
   action     String
   entityType String
   entityId   String?
   detail     String?
+  // Actor snapshot: keeps "who did it" readable even after the user row
+  // is deleted or renamed.
+  actorUsername String?
+  actorFullName String?
   createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
   @@index([userId])
@@ -115,6 +120,8 @@ model Student {
   classRoom    String
   conductScore Int      @default(100)
   active       Boolean  @default(true)
+  // ปีการศึกษา (พ.ศ.) ที่จบการศึกษา/พ้นสภาพ — set by the year-rollover wizard.
+  graduatedYear Int?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -133,19 +140,22 @@ model ConductDeduction {
   reason            String
   category          String?
   recordedByUserId  String?
+  academicYearId    String?
   createdAt         DateTime         @default(now())
   // Soft cancellation: entries are never hard-deleted, only cancelled with a reason.
   cancelledAt       DateTime?
   cancelledByUserId String?
   cancelReason      String?
 
-  student     Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  recordedBy  User?   @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
-  cancelledBy User?   @relation("ConductCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+  student      Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  recordedBy   User?         @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
+  cancelledBy  User?         @relation("ConductCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+  academicYear AcademicYear? @relation(fields: [academicYearId], references: [id], onDelete: SetNull)
 
   @@index([studentId])
   @@index([createdAt])
   @@index([cancelledAt])
+  @@index([academicYearId])
 }
 
 model ConductReason {
@@ -195,23 +205,40 @@ model WasteScoreEntry {
   pointsAwarded     Float
   note              String?
   recordedByUserId  String?
+  academicYearId    String?
   createdAt         DateTime        @default(now())
   // Soft cancellation: entries are never hard-deleted, only cancelled with a reason.
   cancelledAt       DateTime?
   cancelledByUserId String?
   cancelReason      String?
 
-  student     Student?  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  wasteType   WasteType @relation(fields: [wasteTypeId], references: [id])
-  recordedBy  User?     @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
-  cancelledBy User?     @relation("WasteCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+  student      Student?      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  wasteType    WasteType     @relation(fields: [wasteTypeId], references: [id])
+  recordedBy   User?         @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
+  cancelledBy  User?         @relation("WasteCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+  academicYear AcademicYear? @relation(fields: [academicYearId], references: [id], onDelete: SetNull)
 
   @@index([classRoom])
   @@index([createdAt])
   @@index([cancelledAt])
+  @@index([academicYearId])
 }
 
 model SiteSetting {
   key   String @id
   value String
+}
+
+// ปีการศึกษา (Thai academic year, starts in May). Exactly one row has
+// isCurrent = true; closed years are read-only for score entries.
+model AcademicYear {
+  id        String    @id @default(cuid())
+  year      Int       @unique // พ.ศ. เช่น 2569
+  isCurrent Boolean   @default(false)
+  closed    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  closedAt  DateTime?
+
+  conductDeductions ConductDeduction[]
+  wasteScoreEntries WasteScoreEntry[]
 }

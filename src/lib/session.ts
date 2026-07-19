@@ -56,7 +56,13 @@ export type CurrentUser = {
   id: string;
   username: string;
   fullName: string;
-  role: "ADMIN" | "PRESIDENT" | "VICE_PRESIDENT" | "DEPT_HEAD" | "MEMBER";
+  role:
+    | "SUPER_ADMIN"
+    | "ADMIN"
+    | "PRESIDENT"
+    | "VICE_PRESIDENT"
+    | "DEPT_HEAD"
+    | "MEMBER";
   active: boolean;
   mustChangePassword: boolean;
   permissions: Permission[];
@@ -92,6 +98,6 @@ export function hasPermission(
   user: Pick<CurrentUser, "role" | "permissions">,
   permission: Permission,
 ) {
-  if (user.role === "ADMIN") return true;
+  if (user.role === "SUPER_ADMIN" || user.role === "ADMIN") return true;
   return user.permissions.includes(permission);
 }

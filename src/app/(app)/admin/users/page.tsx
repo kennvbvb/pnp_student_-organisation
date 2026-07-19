@@ -28,7 +28,7 @@ export default async function AdminUsersPage() {
           permissions: u.permissions.map((p) => p.permission) as Permission[],
         }))}
         actorId={actor.id}
-        actorIsAdmin={actor.role === "ADMIN"}
+        actorRole={actor.role}
       />
     </div>
   );

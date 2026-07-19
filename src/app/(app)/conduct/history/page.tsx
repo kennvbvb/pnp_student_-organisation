@@ -1,6 +1,7 @@
 import { requirePermission } from "@/lib/auth-guard";
 import { hasPermission } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { listAcademicYears } from "@/lib/academic-year";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
 import Pagination, { parsePage } from "@/components/Pagination";
@@ -18,23 +19,34 @@ function formatDateTime(date: Date) {
 export default async function ConductHistoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; year?: string }>;
 }) {
   const user = await requirePermission("VIEW_CONDUCT_HISTORY");
-  const canDelete = hasPermission(user, "DELETE_CONDUCT_HISTORY");
-  const { q = "", page: pageParam } = await searchParams;
+  const { q = "", page: pageParam, year: yearParam } = await searchParams;
 
-  const where = q
-    ? {
-        student: {
-          OR: [
-            { studentCode: { contains: q } },
-            { firstName: { contains: q } },
-            { lastName: { contains: q } },
-          ],
-        },
-      }
-    : undefined;
+  const years = await listAcademicYears();
+  const selectedYear =
+    years.find((y) => String(y.year) === yearParam) ??
+    years.find((y) => y.isCurrent) ??
+    years[0];
+  // Cancelling is allowed only while the selected year is still open.
+  const canDelete =
+    hasPermission(user, "DELETE_CONDUCT_HISTORY") && !selectedYear.closed;
+
+  const where = {
+    academicYearId: selectedYear.id,
+    ...(q
+      ? {
+          student: {
+            OR: [
+              { studentCode: { contains: q } },
+              { firstName: { contains: q } },
+              { lastName: { contains: q } },
+            ],
+          },
+        }
+      : {}),
+  };
 
   const total = await prisma.conductDeduction.count({ where });
   const page = parsePage(pageParam, Math.ceil(total / PAGE_SIZE));
@@ -65,7 +77,7 @@ export default async function ConductHistoryPage({
         description="รายการบันทึกการเพิ่มและลดคะแนนความประพฤติของนักเรียน"
       />
 
-      <form className="mb-4 flex gap-3" method="get">
+      <form className="mb-4 flex flex-wrap gap-3" method="get">
         <input
           type="text"
           name="q"
@@ -74,12 +86,30 @@ export default async function ConductHistoryPage({
           placeholder="ค้นหารหัสนักเรียน หรือชื่อ"
           className="w-80 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-800/20"
         />
+        <select
+          name="year"
+          defaultValue={String(selectedYear.year)}
+          aria-label="ปีการศึกษา"
+          className="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-800/20"
+        >
+          {years.map((y) => (
+            <option key={y.id} value={y.year}>
+              ปีการศึกษา {y.year}
+              {y.closed ? " (ปิดแล้ว)" : y.isCurrent ? " (ปัจจุบัน)" : ""}
+            </option>
+          ))}
+        </select>
         <button
           type="submit"
           className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
         >
           ค้นหา
         </button>
+        {selectedYear.closed && (
+          <p className="self-center text-xs text-amber-600">
+            ปีการศึกษานี้ปิดแล้ว — ดูได้อย่างเดียว ไม่สามารถยกเลิกรายการได้
+          </p>
+        )}
       </form>
 
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -189,7 +219,12 @@ export default async function ConductHistoryPage({
         </table>
       </div>
 
-      <Pagination page={page} pageSize={PAGE_SIZE} total={total} params={{ q }} />
+      <Pagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        params={{ q, year: String(selectedYear.year) }}
+      />
     </div>
   );
 }

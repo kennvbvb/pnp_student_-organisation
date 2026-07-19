@@ -8,6 +8,7 @@ import { logAudit } from "@/lib/audit";
 import {
   PERMISSIONS,
   ADMIN_ONLY_GRANTABLE,
+  isAdminRole,
   type Permission,
 } from "@/lib/permissions";
 import type { Role } from "@/generated/prisma/enums";
@@ -15,6 +16,7 @@ import type { Role } from "@/generated/prisma/enums";
 export type FormState = { error?: string; success?: string };
 
 const VALID_ROLES: Role[] = [
+  "SUPER_ADMIN",
   "ADMIN",
   "PRESIDENT",
   "VICE_PRESIDENT",
@@ -46,8 +48,14 @@ export async function createUserAction(
     return { error: "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร" };
   }
 
-  if (actor.role !== "ADMIN") {
-    if (role === "ADMIN") {
+  // Only the primary admin may create another primary admin.
+  if (role === "SUPER_ADMIN" && actor.role !== "SUPER_ADMIN") {
+    return {
+      error: "เฉพาะผู้ดูแลระบบหลักเท่านั้นที่สร้างบัญชีระดับนี้ได้",
+    };
+  }
+  if (!isAdminRole(actor.role)) {
+    if (isAdminRole(role)) {
       return { error: "คุณไม่มีสิทธิ์สร้างบัญชีผู้ดูแลระบบ" };
     }
     permissions = permissions.filter(
@@ -109,11 +117,31 @@ export async function updateUserAction(
     return { error: "ไม่พบผู้ใช้นี้ในระบบ" };
   }
 
-  if (actor.role !== "ADMIN") {
-    if (target.role === "ADMIN") {
+  const actorIsSuperAdmin = actor.role === "SUPER_ADMIN";
+  const targetIsSuperAdmin = target.role === "SUPER_ADMIN";
+
+  // Primary-admin protections: only a super admin may touch a super admin
+  // account or assign the role.
+  if (targetIsSuperAdmin && !actorIsSuperAdmin) {
+    return { error: "คุณไม่มีสิทธิ์แก้ไขบัญชีผู้ดูแลระบบหลัก" };
+  }
+  if (role === "SUPER_ADMIN" && !actorIsSuperAdmin) {
+    return { error: "คุณไม่มีสิทธิ์กำหนดบทบาทผู้ดูแลระบบหลัก" };
+  }
+  // Regular admins cannot modify other admins (only a super admin can).
+  if (
+    target.role === "ADMIN" &&
+    actor.role === "ADMIN" &&
+    actor.id !== target.id
+  ) {
+    return { error: "ไม่อนุญาตให้แก้ไขบัญชีผู้ดูแลระบบคนอื่น" };
+  }
+
+  if (!isAdminRole(actor.role)) {
+    if (isAdminRole(target.role)) {
       return { error: "คุณไม่มีสิทธิ์แก้ไขบัญชีผู้ดูแลระบบ" };
     }
-    if (role === "ADMIN") {
+    if (isAdminRole(role)) {
       return { error: "คุณไม่มีสิทธิ์ตั้งบัญชีนี้เป็นผู้ดูแลระบบ" };
     }
     permissions = permissions.filter(
@@ -124,32 +152,55 @@ export async function updateUserAction(
   if (actor.id === id && !active) {
     return { error: "ไม่สามารถระงับบัญชีของตนเองได้" };
   }
+  if (actor.id === id && role !== actor.role) {
+    return { error: "ไม่สามารถเปลี่ยนบทบาทบัญชีของตนเองได้" };
+  }
 
   if (newPassword && newPassword.length < 8) {
     return { error: "รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร" };
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id },
-      data: {
-        fullName,
-        role,
-        active,
-        ...(newPassword
-          ? {
-              passwordHash: await bcrypt.hash(newPassword, 10),
-              // A password reset by someone else must be changed on next login.
-              ...(actor.id !== id ? { mustChangePassword: true } : {}),
-            }
-          : {}),
-      },
+  try {
+    await prisma.$transaction(async (tx) => {
+      // The system must always keep at least one active super admin.
+      // Counted inside the transaction to avoid racing concurrent edits.
+      if (targetIsSuperAdmin && (!active || role !== "SUPER_ADMIN")) {
+        const activeSuperAdmins = await tx.user.count({
+          where: { role: "SUPER_ADMIN", active: true },
+        });
+        if (activeSuperAdmins <= 1) {
+          throw new Error("LAST_SUPER_ADMIN");
+        }
+      }
+
+      await tx.user.update({
+        where: { id },
+        data: {
+          fullName,
+          role,
+          active,
+          ...(newPassword
+            ? {
+                passwordHash: await bcrypt.hash(newPassword, 10),
+                // A password reset by someone else must be changed on next login.
+                ...(actor.id !== id ? { mustChangePassword: true } : {}),
+              }
+            : {}),
+        },
+      });
+      await tx.userPermission.deleteMany({ where: { userId: id } });
+      await tx.userPermission.createMany({
+        data: permissions.map((permission) => ({ userId: id, permission })),
+      });
     });
-    await tx.userPermission.deleteMany({ where: { userId: id } });
-    await tx.userPermission.createMany({
-      data: permissions.map((permission) => ({ userId: id, permission })),
-    });
-  });
+  } catch (e) {
+    if (e instanceof Error && e.message === "LAST_SUPER_ADMIN") {
+      return {
+        error: "ระบบต้องมีผู้ดูแลระบบหลักที่ใช้งานอยู่อย่างน้อย 1 บัญชี",
+      };
+    }
+    throw e;
+  }
 
   // Record old → new values for every changed field.
   const changes: string[] = [];
@@ -174,26 +225,51 @@ export async function updateUserAction(
   return { success: "บันทึกการแก้ไขเรียบร้อยแล้ว" };
 }
 
-export async function deleteUserAction(formData: FormData) {
+export async function deleteUserAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const actor = await requirePermission("MANAGE_USERS");
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
 
-  if (actor.id === id) return;
+  if (!id) {
+    return { error: "ไม่พบรหัสผู้ใช้" };
+  }
+  if (actor.id === id) {
+    return { error: "ไม่สามารถลบบัญชีของตนเองได้" };
+  }
 
   const target = await prisma.user.findUnique({ where: { id } });
-  if (!target) return;
-  if (actor.role !== "ADMIN" && target.role === "ADMIN") return;
+  if (!target) {
+    return { error: "ไม่พบผู้ใช้นี้ในระบบ" };
+  }
 
-  await prisma.user.delete({ where: { id } });
+  // The primary admin account can never be deleted from the web UI.
+  if (target.role === "SUPER_ADMIN") {
+    return { error: "ไม่อนุญาตให้ลบบัญชีผู้ดูแลระบบหลัก" };
+  }
+  // Regular admins are deletable only by the super admin.
+  if (target.role === "ADMIN" && actor.role !== "SUPER_ADMIN") {
+    return {
+      error: "เฉพาะผู้ดูแลระบบหลักเท่านั้นที่ลบบัญชีผู้ดูแลระบบได้",
+    };
+  }
+  if (!isAdminRole(actor.role) && isAdminRole(target.role)) {
+    return { error: "คุณไม่มีสิทธิ์ลบบัญชีผู้ดูแลระบบ" };
+  }
 
+  // Log BEFORE deleting so the actor snapshot is written while the target
+  // still exists; the log row itself survives via onDelete: SetNull.
   await logAudit({
     userId: actor.id,
     action: "DELETE",
     entityType: "User",
     entityId: id,
-    detail: `ลบผู้ใช้ ${target.username}`,
+    detail: `ลบผู้ใช้ ${target.username} (${target.fullName})`,
   });
 
+  await prisma.user.delete({ where: { id } });
+
   revalidatePath("/admin/users");
+  return { success: `ลบผู้ใช้ ${target.username} เรียบร้อยแล้ว` };
 }

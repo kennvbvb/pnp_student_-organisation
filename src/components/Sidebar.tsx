@@ -66,6 +66,12 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     permission: "MANAGE_USERS",
   },
   {
+    href: "/admin/academic-year",
+    label: "ปีการศึกษา",
+    icon: PlanIcon,
+    permission: "MANAGE_SETTINGS",
+  },
+  {
     href: "/admin/logs",
     label: "ประวัติการใช้งาน (Log)",
     icon: LogIcon,
@@ -81,7 +87,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
 
 function hasAccess(user: CurrentUser, item: NavItem) {
   if (!item.permission) return true;
-  if (user.role === "ADMIN") return true;
+  if (user.role === "SUPER_ADMIN" || user.role === "ADMIN") return true;
   return user.permissions.includes(item.permission);
 }
 

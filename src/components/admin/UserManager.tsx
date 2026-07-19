@@ -13,6 +13,7 @@ import {
   ROLE_LABELS,
   ROLE_DEFAULT_PERMISSIONS,
   ADMIN_ONLY_GRANTABLE,
+  isAdminRole,
   type Permission,
 } from "@/lib/permissions";
 import type { Role } from "@/generated/prisma/enums";
@@ -28,7 +29,23 @@ export type UserRow = {
 };
 
 const initialState: FormState = {};
-const ALL_ROLES: Role[] = ["ADMIN", "PRESIDENT", "VICE_PRESIDENT", "DEPT_HEAD", "MEMBER"];
+const ALL_ROLES: Role[] = [
+  "SUPER_ADMIN",
+  "ADMIN",
+  "PRESIDENT",
+  "VICE_PRESIDENT",
+  "DEPT_HEAD",
+  "MEMBER",
+];
+
+/** Roles the actor is allowed to assign (mirrors server rules). */
+function assignableRoles(actorRole: Role): Role[] {
+  return ALL_ROLES.filter((r) => {
+    if (r === "SUPER_ADMIN") return actorRole === "SUPER_ADMIN";
+    if (r === "ADMIN") return isAdminRole(actorRole);
+    return true;
+  });
+}
 
 function PermissionCheckboxes({
   selected,
@@ -65,12 +82,13 @@ function PermissionCheckboxes({
 }
 
 function CreateUserForm({
-  actorIsAdmin,
+  actorRole,
   onDone,
 }: {
-  actorIsAdmin: boolean;
+  actorRole: Role;
   onDone: () => void;
 }) {
+  const actorIsAdmin = isAdminRole(actorRole);
   const [state, formAction, pending] = useActionState(
     createUserAction,
     initialState,
@@ -163,13 +181,11 @@ function CreateUserForm({
             onChange={(e) => handleRoleChange(e.target.value as Role)}
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
           >
-            {ALL_ROLES.filter((r) => actorIsAdmin || r !== "ADMIN").map(
-              (r) => (
-                <option key={r} value={r}>
-                  {ROLE_LABELS[r]}
-                </option>
-              ),
-            )}
+            {assignableRoles(actorRole).map((r) => (
+              <option key={r} value={r}>
+                {ROLE_LABELS[r]}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -203,15 +219,16 @@ function CreateUserForm({
 
 function EditUserForm({
   user,
-  actorIsAdmin,
+  actorRole,
   isSelf,
   onDone,
 }: {
   user: UserRow;
-  actorIsAdmin: boolean;
+  actorRole: Role;
   isSelf: boolean;
   onDone: () => void;
 }) {
+  const actorIsAdmin = isAdminRole(actorRole);
   const [state, formAction, pending] = useActionState(
     updateUserAction,
     initialState,
@@ -266,10 +283,11 @@ function EditUserForm({
                 id="ue-role"
                 name="role"
                 defaultValue={user.role}
-                disabled={!actorIsAdmin && user.role === "ADMIN"}
+                disabled={isSelf || (!actorIsAdmin && isAdminRole(user.role))}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
               >
-                {ALL_ROLES.filter((r) => actorIsAdmin || r !== "ADMIN").map(
+                {/* Include the current role so the select shows it even when the actor couldn't assign it. */}
+                {[...new Set([user.role, ...assignableRoles(actorRole)])].map(
                   (r) => (
                     <option key={r} value={r}>
                       {ROLE_LABELS[r]}
@@ -343,24 +361,48 @@ function EditUserForm({
   );
 }
 
+function DeleteUserForm({ user }: { user: UserRow }) {
+  const [state, formAction] = useActionState(deleteUserAction, initialState);
+
+  return (
+    <form action={formAction} className="inline">
+      <input type="hidden" name="id" value={user.id} />
+      <ConfirmSubmitButton
+        message={`ต้องการลบผู้ใช้ "${user.username}" ใช่หรือไม่?`}
+        detail="ประวัติการใช้งาน (Log) ของผู้ใช้นี้จะยังคงอยู่ในระบบ"
+        className="text-red-600 hover:underline"
+      >
+        ลบ
+      </ConfirmSubmitButton>
+      {state.error && (
+        <span role="alert" className="ml-2 text-xs text-red-600">
+          {state.error}
+        </span>
+      )}
+    </form>
+  );
+}
+
 export default function UserManager({
   users,
   actorId,
-  actorIsAdmin,
+  actorRole,
 }: {
   users: UserRow[];
   actorId: string;
-  actorIsAdmin: boolean;
+  actorRole: Role;
 }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const actorIsSuperAdmin = actorRole === "SUPER_ADMIN";
+  const actorIsAdmin = isAdminRole(actorRole);
 
   return (
     <div className="space-y-4">
       <div>
         {showAdd ? (
           <CreateUserForm
-            actorIsAdmin={actorIsAdmin}
+            actorRole={actorRole}
             onDone={() => setShowAdd(false)}
           />
         ) : (
@@ -387,13 +429,25 @@ export default function UserManager({
           </thead>
           <tbody>
             {users.map((u) => {
-              const canEdit = actorIsAdmin || u.role !== "ADMIN";
+              const isSelf = u.id === actorId;
+              const targetIsSuperAdmin = u.role === "SUPER_ADMIN";
+              const targetIsAdmin = u.role === "ADMIN";
+              // Mirrors the server rules — the server re-checks everything.
+              const canEdit = targetIsSuperAdmin
+                ? isSelf || actorIsSuperAdmin
+                : targetIsAdmin
+                  ? isSelf || actorIsSuperAdmin
+                  : actorIsAdmin || !isAdminRole(u.role);
+              const canDelete =
+                !isSelf &&
+                !targetIsSuperAdmin &&
+                (targetIsAdmin ? actorIsSuperAdmin : true);
               return editingId === u.id ? (
                 <EditUserForm
                   key={u.id}
                   user={u}
-                  actorIsAdmin={actorIsAdmin}
-                  isSelf={u.id === actorId}
+                  actorRole={actorRole}
+                  isSelf={isSelf}
                   onDone={() => setEditingId(null)}
                 />
               ) : (
@@ -401,12 +455,18 @@ export default function UserManager({
                   <td className="px-4 py-3 text-slate-600">{u.username}</td>
                   <td className="px-4 py-3 font-medium text-slate-800">
                     {u.fullName}
-                    {u.id === actorId && (
+                    {isSelf && (
                       <span className="ml-2 text-xs text-slate-400">(คุณ)</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-slate-500">
-                    {ROLE_LABELS[u.role]}
+                    {targetIsSuperAdmin ? (
+                      <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                        {ROLE_LABELS[u.role]}
+                      </span>
+                    ) : (
+                      ROLE_LABELS[u.role]
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {u.active ? (
@@ -429,16 +489,18 @@ export default function UserManager({
                         แก้ไข
                       </button>
                     )}
-                    {canEdit && u.id !== actorId && (
-                      <form action={deleteUserAction} className="inline">
-                        <input type="hidden" name="id" value={u.id} />
-                        <ConfirmSubmitButton
-                          message={`ต้องการลบผู้ใช้ "${u.username}" ใช่หรือไม่?`}
-                          className="text-red-600 hover:underline"
-                        >
-                          ลบ
-                        </ConfirmSubmitButton>
-                      </form>
+                    {canDelete && <DeleteUserForm user={u} />}
+                    {!canEdit && !canDelete && (
+                      <span
+                        className="text-xs text-slate-300"
+                        title={
+                          targetIsSuperAdmin
+                            ? "บัญชีผู้ดูแลระบบหลักได้รับการปกป้อง"
+                            : "เฉพาะผู้ดูแลระบบหลักเท่านั้นที่จัดการบัญชีนี้ได้"
+                        }
+                      >
+                        —
+                      </span>
                     )}
                   </td>
                 </tr>
