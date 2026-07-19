@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth-guard";
 import { logAudit } from "@/lib/audit";
+import { getCurrentAcademicYear } from "@/lib/academic-year";
 
 export type FormState = { error?: string; success?: string };
 
@@ -53,6 +54,7 @@ export async function recordConductEntryAction(
   const delta = type === "ADD" ? amount : -amount;
   // Clamp so the stored score never leaves [0, 100].
   const newScore = clampScore(student.conductScore + delta);
+  const academicYear = await getCurrentAcademicYear();
 
   await prisma.$transaction([
     prisma.conductDeduction.create({
@@ -63,6 +65,7 @@ export async function recordConductEntryAction(
         reason,
         category,
         recordedByUserId: user.id,
+        academicYearId: academicYear.id,
       },
     }),
     prisma.student.update({
@@ -100,9 +103,11 @@ export async function cancelConductEntryAction(formData: FormData) {
 
   const entry = await prisma.conductDeduction.findUnique({
     where: { id },
-    include: { student: true },
+    include: { student: true, academicYear: true },
   });
   if (!entry || entry.cancelledAt) return;
+  // Closed academic years are read-only.
+  if (entry.academicYear?.closed) return;
 
   // Reverse the score effect: a DEDUCT gave -amount, so undo = +amount (and vice versa).
   const reverseDelta = entry.type === "ADD" ? -entry.amount : entry.amount;

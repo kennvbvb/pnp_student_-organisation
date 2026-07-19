@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth-guard";
 import { logAudit } from "@/lib/audit";
+import { getCurrentAcademicYear } from "@/lib/academic-year";
 
 export type FormState = { error?: string; success?: string };
 
@@ -73,9 +74,11 @@ export async function cancelWasteEntryAction(formData: FormData) {
 
   const entry = await prisma.wasteScoreEntry.findUnique({
     where: { id },
-    include: { wasteType: { select: { name: true } } },
+    include: { wasteType: { select: { name: true } }, academicYear: true },
   });
   if (!entry || entry.cancelledAt) return;
+  // Closed academic years are read-only.
+  if (entry.academicYear?.closed) return;
 
   await prisma.wasteScoreEntry.update({
     where: { id },
@@ -137,6 +140,7 @@ export async function recordWasteScoreAction(
   // Round to 2 decimals to avoid floating-point artifacts in stored points.
   const pointsAwarded =
     Math.round(quantity * wasteType.pointsPerUnit * 100) / 100;
+  const academicYear = await getCurrentAcademicYear();
 
   await prisma.wasteScoreEntry.create({
     data: {
@@ -148,6 +152,7 @@ export async function recordWasteScoreAction(
       pointsAwarded,
       note,
       recordedByUserId: user.id,
+      academicYearId: academicYear.id,
     },
   });
 

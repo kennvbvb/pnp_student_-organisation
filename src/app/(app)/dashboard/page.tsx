@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { classifyLevel } from "@/lib/level";
+import { getCurrentAcademicYear } from "@/lib/academic-year";
 import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import AlertBanner from "@/components/AlertBanner";
@@ -39,6 +40,7 @@ export default async function DashboardPage() {
   const user = await requireUser();
   const isAdmin = user.role === "ADMIN";
 
+  const academicYear = await getCurrentAcademicYear();
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const upcomingUntil = new Date(now);
@@ -92,12 +94,20 @@ export default async function DashboardPage() {
     }),
     prisma.wasteScoreEntry.groupBy({
       by: ["classRoom"],
-      where: { targetType: "ROOM", cancelledAt: null },
+      where: {
+        targetType: "ROOM",
+        cancelledAt: null,
+        academicYearId: academicYear.id,
+      },
       _sum: { pointsAwarded: true },
     }),
     prisma.wasteScoreEntry.groupBy({
       by: ["studentId"],
-      where: { targetType: "STUDENT", cancelledAt: null },
+      where: {
+        targetType: "STUDENT",
+        cancelledAt: null,
+        academicYearId: academicYear.id,
+      },
       _sum: { pointsAwarded: true },
     }),
     prisma.conductDeduction.findMany({

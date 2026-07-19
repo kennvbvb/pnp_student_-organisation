@@ -66,6 +66,12 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     permission: "MANAGE_USERS",
   },
   {
+    href: "/admin/academic-year",
+    label: "ปีการศึกษา",
+    icon: PlanIcon,
+    permission: "MANAGE_SETTINGS",
+  },
+  {
     href: "/admin/logs",
     label: "ประวัติการใช้งาน (Log)",
     icon: LogIcon,

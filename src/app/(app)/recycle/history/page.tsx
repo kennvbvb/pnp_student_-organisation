@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth-guard";
 import { hasPermission } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { listAcademicYears } from "@/lib/academic-year";
 import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
@@ -19,16 +20,26 @@ function formatDateTime(date: Date) {
 export default async function RecycleHistoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; year?: string }>;
 }) {
   const user = await requireUser();
-  const canDelete = hasPermission(user, "DELETE_RECYCLE_HISTORY");
-  const { page: pageParam } = await searchParams;
+  const { page: pageParam, year: yearParam } = await searchParams;
 
-  const entriesTotal = await prisma.wasteScoreEntry.count();
+  const years = await listAcademicYears();
+  const selectedYear =
+    years.find((y) => String(y.year) === yearParam) ??
+    years.find((y) => y.isCurrent) ??
+    years[0];
+  // Cancelling is allowed only while the selected year is still open.
+  const canDelete =
+    hasPermission(user, "DELETE_RECYCLE_HISTORY") && !selectedYear.closed;
+
+  const yearWhere = { academicYearId: selectedYear.id };
+  const entriesTotal = await prisma.wasteScoreEntry.count({ where: yearWhere });
   const page = parsePage(pageParam, Math.ceil(entriesTotal / PAGE_SIZE));
 
   const entries = await prisma.wasteScoreEntry.findMany({
+    where: yearWhere,
     orderBy: { createdAt: "desc" },
     skip: (page - 1) * PAGE_SIZE,
     take: PAGE_SIZE,
@@ -46,16 +57,16 @@ export default async function RecycleHistoryPage({
   const [roomGroups, studentGroups, totalAgg] = await Promise.all([
     prisma.wasteScoreEntry.groupBy({
       by: ["classRoom"],
-      where: { targetType: "ROOM", cancelledAt: null },
+      where: { targetType: "ROOM", cancelledAt: null, ...yearWhere },
       _sum: { pointsAwarded: true },
     }),
     prisma.wasteScoreEntry.groupBy({
       by: ["studentId"],
-      where: { targetType: "STUDENT", cancelledAt: null },
+      where: { targetType: "STUDENT", cancelledAt: null, ...yearWhere },
       _sum: { pointsAwarded: true },
     }),
     prisma.wasteScoreEntry.aggregate({
-      where: { cancelledAt: null },
+      where: { cancelledAt: null, ...yearWhere },
       _sum: { pointsAwarded: true },
     }),
   ]);
@@ -97,6 +108,33 @@ export default async function RecycleHistoryPage({
         title="ประวัติและสรุปคะแนนขยะแลกแต้ม"
         description="ประวัติการบันทึกคะแนนและอันดับสะสมคะแนนรายห้อง/รายบุคคล"
       />
+
+      <form className="flex flex-wrap items-center gap-3" method="get">
+        <select
+          name="year"
+          defaultValue={String(selectedYear.year)}
+          aria-label="ปีการศึกษา"
+          className="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-800/20"
+        >
+          {years.map((y) => (
+            <option key={y.id} value={y.year}>
+              ปีการศึกษา {y.year}
+              {y.closed ? " (ปิดแล้ว)" : y.isCurrent ? " (ปัจจุบัน)" : ""}
+            </option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+        >
+          แสดง
+        </button>
+        {selectedYear.closed && (
+          <p className="text-xs text-amber-600">
+            ปีการศึกษานี้ปิดแล้ว — ดูได้อย่างเดียว ไม่สามารถยกเลิกรายการได้
+          </p>
+        )}
+      </form>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-5">
@@ -245,7 +283,12 @@ export default async function RecycleHistoryPage({
         </table>
       </div>
 
-      <Pagination page={page} pageSize={PAGE_SIZE} total={entriesTotal} />
+      <Pagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={entriesTotal}
+        params={{ year: String(selectedYear.year) }}
+      />
     </div>
   );
 }
